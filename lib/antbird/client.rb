@@ -1,9 +1,8 @@
-require 'antbird/client/cluster'
-
 module Antbird
   class Client
-    def initialize(url: "http://localhost:9200")
+    def initialize(url: "http://localhost:9200", version: '6.2.3')
       @url = url
+      require 'antbird/client/rest_api/rest_api_v5_5'
     end
 
     def get(path, params = {})
