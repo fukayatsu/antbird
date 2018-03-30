@@ -25,7 +25,7 @@ RSpec.describe Antbird::Client do
       end
 
       it do
-        expect(client.scope(index: 'not_found')._indices_exists). to eq true
+        expect(client.scope(index: 'not_found')._indices_exists). to eq false
       end
     end
   end

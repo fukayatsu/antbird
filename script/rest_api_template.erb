@@ -16,8 +16,9 @@ module Antbird
       # <%= api_spec['documentation'] %>
       def _<%= api_name.tr('.', '_') %>(params = {})
 
-        api_spec = @api_specs['<%= api_name %>'] ||= <%= api_spec %>
-        request(api_spec, params)
+        api_name = '<%= api_name %>'
+        api_spec = @api_specs[api_name] ||= <%= api_spec %>
+        request(api_name, api_spec, params)
       end
 <%  end # file_content.each %>
 <% end # api_spec.each %>

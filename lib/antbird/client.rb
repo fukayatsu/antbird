@@ -38,7 +38,7 @@ module Antbird
       )
     end
 
-    def request(api_spec, params)
+    def request(api_name, api_spec, params)
       api_path = nil
       api_spec['url']['paths'].each do |path|
         embeded = path.gsub(/{(\S+)}/) do |match|
