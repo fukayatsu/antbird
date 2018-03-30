@@ -1,8 +1,5 @@
 # Antbird
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/antbird`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
 
 ## Installation
 
@@ -22,7 +19,60 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### client
+
+```ruby
+client = Antbird::Client.new
+
+# OR
+
+client = Antbird::Client.new(url: 'http://localhost:9200')
+```
+
+### Cluster
+
+```ruby
+client.cluster.health
+
+```
+
+### Index
+
+```ruby
+
+index = client.index('books')
+index.create(
+  settings: { 'index.number_of_shards' => 3 },
+  mappings: {
+    book: {
+      _source: { :enabled => true },
+      _all:    { :enabled => false },
+      properties: {
+        author: { type: 'text', index: 'not_analyzed' },
+        content:  { type: 'text', analyze: 'standard' }
+      }
+    }
+  }
+)
+
+index.exists?
+index.exists?(type: 'book')
+index.delete
+```
+
+### Documents
+
+```ruby
+docs = client.documents('books')
+docs.index(
+  _id:    1,
+  _type:  'book',
+  author: 'foo',
+  content:  'foo bar baz'
+)
+
+docs.search({ query: { match_all: {} } }, size: 0)
+```
 
 ## Development
 
@@ -32,7 +82,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/antbird. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/fukayatsu/antbird. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
@@ -40,4 +90,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the Antbird project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/antbird/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Antbird project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/fukayatsu/antbird/blob/master/CODE_OF_CONDUCT.md).
