@@ -10,7 +10,7 @@ module Antbird
       read_timeout: 5,
       open_timeout: 2
     )
-      @scope     = {}
+      @scope     = scope
       @url       = url
       @version   = version
 
@@ -28,13 +28,37 @@ module Antbird
     attr_reader :read_timeout, :open_timeout
     attr_reader :api_specs
 
-    def scope(new_scope)
-      Client.new(new_scope, url: @url, version: @version)
+    def scope(new_scope = {})
+      Client.new(
+        new_scope.transform_keys(&:to_sym),
+        url: url,
+        version: version,
+        read_timeout: read_timeout,
+        open_timeout: open_timeout
+      )
     end
 
     def request(api_spec, params)
-      # TODO: embed
-      path   = api_spec['url']['paths'].find { |path| path.count('{') == @scope.count  }
+      api_path = nil
+      api_spec['url']['paths'].each do |path|
+        embeded = path.gsub(/{(\S+)}/) do |match|
+          if val = @scope[$1.to_sym]
+            val
+          else
+            match
+          end
+        end
+
+        if embeded.count('{')
+          api_path = embeded
+          break
+        end
+      end
+
+      unless api_path
+        raise "API path not found: paths: #{api_spec['url']['paths']}, scope: #{@scope}"
+      end
+
       method = api_spec['methods'].first.downcase.to_sym
 
       read_timeout = params.delete(:read_timeout)
@@ -43,9 +67,9 @@ module Antbird
       response =
         case method
         when :head
-          connection.head(path) { |req| req.options[:timeout] = read_timeout if read_timeout }
+          connection.head(api_path) { |req| req.options[:timeout] = read_timeout if read_timeout }
         when :get
-          connection.get(path) { |req|
+          connection.get(api_path) { |req|
             req.body = body if body
             req.options[:timeout] = read_timeout if read_timeout
           }
@@ -54,7 +78,18 @@ module Antbird
           raise ArgumentError, "unknown HTTP request method: #{method.inspect}"
         end
 
-      response.body
+      if method == :head
+        case response.status
+        when 200
+          true
+        when 404
+          false
+        else
+          raise 'error'
+        end
+      else
+        response.body
+      end
     end
 
     def extract_body(params)
