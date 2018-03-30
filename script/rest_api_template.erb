@@ -1,0 +1,22 @@
+# Generated REST API methods file - DO NOT EDIT!
+# Date: <%= Time.now.strftime("%Y-%m-%d") %>
+# ES version: <%= version %>
+
+module Antbird::Client::RestApi
+  module ApiSpecV<%= class_version %>
+<% api_spec.each do |file_name, file_content| %>
+<%  next if file_name == '_common.json' %>
+<%  file_content.each do |api_name, api_spec| %>
+    # <%= file_name %> <%= api_name %> <%= api_spec['methods'] %>
+<%    if api_spec['methods'].size == 1 %>
+    def _<%= api_name.tr('.', '_') %>(params = {})
+    end
+<%    else %>
+    def TODO
+    end
+<%    end %>
+
+<%  end # file_content.each %>
+<% end # api_spec.each %>
+  end
+end
