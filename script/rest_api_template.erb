@@ -3,25 +3,24 @@
 # ES version: <%= version %>
 
 module Antbird
-  module Client
-    module RestApi
-      module RestApiV<%= class_version %>
-        def common_params
-          <%= api_spec['_common.json'] %>
-        end
+  module RestApi
+    module RestApiV<%= class_version %>
+      def common_params
+        @common_params ||= <%= api_spec['_common.json'] %>
+      end
 <% api_spec.each do |file_name, file_content| %>
 <%  next if file_name == '_common.json' %>
 <%  file_content.each do |api_name, api_spec| %>
 
-        # <%= api_name %> <%= api_spec['methods'] %>
-        # <%= api_spec['documentation'] %>
-        def _<%= api_name.tr('.', '_') %>(params = {})
-          api_spec = <%= api_spec %>
-          request(params, api_spec)
-        end
+      # <%= api_name %> <%= api_spec['methods'] %>
+      # <%= api_spec['documentation'] %>
+      def _<%= api_name.tr('.', '_') %>(params = {})
+
+        api_spec = @api_specs['<%= api_name %>'] ||= <%= api_spec %>
+        request(api_spec, params)
+      end
 <%  end # file_content.each %>
 <% end # api_spec.each %>
-      end
     end
   end
 end

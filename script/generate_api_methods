@@ -18,7 +18,7 @@ class ApiMethodsGenerator
 
   def run
     api_spec = fetch_api_spec("v#{version}")
-    File.open("lib/antbird/client/rest_api/rest_api_v#{class_version}.rb", "w") do |f|
+    File.open("lib/antbird/rest_api/rest_api_v#{class_version}.rb", "w") do |f|
       f.puts ERB.new(File.read('script/rest_api_template.erb'), 0, "<>").result(binding)
     end
   end
