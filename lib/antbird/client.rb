@@ -4,7 +4,7 @@ require 'faraday_middleware'
 module Antbird
   class Client
     def initialize(
-      scope = {},
+      scope: {},
       url: "http://localhost:9200",
       version: '5.5.3',
       read_timeout: 5,
@@ -28,9 +28,9 @@ module Antbird
     attr_reader :read_timeout, :open_timeout
     attr_reader :api_specs
 
-    def scope(new_scope = {})
+    def scoped(new_scope = {})
       Client.new(
-        new_scope.transform_keys(&:to_sym),
+        scope: new_scope.transform_keys(&:to_sym),
         url: url,
         version: version,
         read_timeout: read_timeout,
@@ -39,30 +39,27 @@ module Antbird
     end
 
     def request(api_name, api_spec, params)
+      body   = extract_body(params)
+      scopes = extract_scopes(params)
+
+      # 長い方からチェック
       api_path = nil
-      api_spec['url']['paths'].each do |path|
-        embeded = path.gsub(/{(\S+)}/) do |match|
-          if val = @scope[$1.to_sym]
-            val
-          else
-            match
-          end
+      api_spec['url']['paths'].sort { |a, b| b.size <=> a.size }.each do |path|
+        embeded = path.gsub(/{([a-z_\-}]+)}/) do |match|
+          scopes[$1.to_sym] || @scope[$1.to_sym] || match
         end
 
-        if embeded.count('{')
-          api_path = embeded
-          break
-        end
+        break api_path = embeded unless embeded.include?('{')
       end
 
       unless api_path
         raise "API path not found: paths: #{api_spec['url']['paths']}, scope: #{@scope}"
       end
 
-      method = api_spec['methods'].first.downcase.to_sym
+      methods = api_spec['methods'].map(&:downcase).map(&:to_sym)
+      method = methods.include?(:post) ? :post : methods.first
 
       read_timeout = params.delete(:read_timeout)
-      body = extract_body(params)
 
       response =
         case method
@@ -73,7 +70,18 @@ module Antbird
             req.body = body if body
             req.options[:timeout] = read_timeout if read_timeout
           }
-        # when :post # TODO
+        when :put
+          connection.put(api_path, body) { |req| req.options[:timeout] = read_timeout if read_timeout }
+        when :post
+          connection.post(api_path, body) do |req|
+            req.params = params unless params.empty?
+            req.options[:timeout] = read_timeout if read_timeout
+          end
+        when :delete
+          connection.delete(api_path) do |req|
+            req.body = body if body
+            req.options[:timeout] = read_timeout if read_timeout
+          end
         else
           raise ArgumentError, "unknown HTTP request method: #{method.inspect}"
         end
@@ -90,6 +98,18 @@ module Antbird
       else
         response.body
       end
+
+      # TODO: handle errors
+    end
+
+    def extract_scopes(params)
+      scopes = {}
+      [:index, :type, :id].each do |s|
+        scope = params.delete(s)
+        next unless scope
+        scopes[s] = scope
+      end
+      scopes
     end
 
     def extract_body(params)
