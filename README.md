@@ -19,59 +19,62 @@ Or install it yourself as:
 
 ## Usage
 
-### client
+### Client
 
 ```ruby
 client = Antbird::Client.new
 
 # OR
 
-client = Antbird::Client.new(url: 'http://localhost:9200')
+client = Antbird::Client.new.scoped(index: 'test-index', type: 'test-type')
+
+# OR
+
+client = Antbird::Client.new(
+  url: 'http://localhost:9200',
+  version: '6.2.3'
+  scope: {
+    index: 'test-index',
+    type: 'test-type'
+  }
+)
 ```
 
-### Cluster
+### Call APIs
 
 ```ruby
-client.cluster.health
+client = Antbird::Client.new(
+  scope: { index: 'test-index', type: 'test-type' }
+)
 
-```
-
-### Index
-
-```ruby
-
-index = client.index('books')
-index.create(
-  settings: { 'index.number_of_shards' => 3 },
+client.indices_exists? # => false
+client.indices_create(
+  settings: { number_of_shards: 1 },
   mappings: {
-    book: {
-      _source: { :enabled => true },
-      _all:    { :enabled => false },
+    'test-type': {
       properties: {
-        author: { type: 'text', index: 'not_analyzed' },
-        content:  { type: 'text', analyze: 'standard' }
+        field1: { type: :text }
       }
     }
   }
 )
 
-index.exists?
-index.exists?(type: 'book')
-index.delete
-```
+client.indices_exists? # => true
 
-### Documents
+client.index(id: 'doc-1', body: { field1: 'foo bar' })
 
-```ruby
-docs = client.documents('books')
-docs.index(
-  _id:    1,
-  _type:  'book',
-  author: 'foo',
-  content:  'foo bar baz'
-)
+client.indices_refresh
 
-docs.search({ query: { match_all: {} } }, size: 0)
+client.search(body: { query: { match_all: {} } })
+
+client.bulk(body: [
+  { index: { _id: 'doc-1' } },
+  { field1: 'aaa' },
+  { index: { _id: 'doc-2' } },
+  { field1: 'bbb' },
+  { index: { _id: 'doc-3' } },
+  { field1: 'ccc' },
+])
 ```
 
 ## Development
