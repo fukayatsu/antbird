@@ -3,10 +3,12 @@ require 'faraday_middleware'
 
 module Antbird
   class Client
+    DEFAULT_VERSION = '6.2.3'
+
     def initialize(
       scope: {},
       url: "http://localhost:9200",
-      version: '5.5.3',
+      version: DEFAULT_VERSION,
       read_timeout: 5,
       open_timeout: 2
     )
