@@ -14,12 +14,14 @@ module Antbird
 
       # <%= api_name %> <%= api_spec['methods'] %>
       # <%= api_spec['documentation'] %>
-      def _<%= api_name.tr('.', '_') %>(params = {})
-
+      def <%= api_name.tr('.', '_') %>(params = {})
         api_name = '<%= api_name %>'
         api_spec = @api_specs[api_name] ||= <%= api_spec %>
         request(api_name, api_spec, params)
       end
+<%    if api_spec['methods'] == ['HEAD'] %>
+      alias :<%= api_name.tr('.', '_') %>? :<%= api_name.tr('.', '_') %>
+<%    end %>
 <%  end # file_content.each %>
 <% end # api_spec.each %>
     end

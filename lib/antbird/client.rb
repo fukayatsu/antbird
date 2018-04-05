@@ -10,7 +10,7 @@ module Antbird
       read_timeout: 5,
       open_timeout: 2
     )
-      @scope     = scope
+      @scope     = scope.transform_keys(&:to_sym)
       @url       = url
       @version   = version
 
@@ -30,7 +30,7 @@ module Antbird
 
     def scoped(new_scope = {})
       Client.new(
-        scope: new_scope.transform_keys(&:to_sym),
+        scope: new_scope,
         url: url,
         version: version,
         read_timeout: read_timeout,
