@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["fukayatsu"]
   spec.email         = ["fukayatsu@gmail.com"]
 
-  spec.summary       = %q{antbird}
-  spec.description   = %q{antbird}
+  spec.summary       = %q{Nearly auto-generated Elasticsearch client}
+  spec.description   = %q{Nearly auto-generated Elasticsearch client}
   spec.homepage      = "https://github.com/fukayatsu/antbird"
   spec.license       = "MIT"
 

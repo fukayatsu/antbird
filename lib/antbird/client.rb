@@ -139,7 +139,6 @@ module Antbird
 
     def connection
       @connection ||= Faraday.new(url) do |conn|
-        # TODO: bulkのところはndjsonなのでこれだとダメかも
         conn.request :json
         conn.response :json, :content_type => /\bjson$/
 

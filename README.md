@@ -1,5 +1,6 @@
 # Antbird
 
+Nearly auto-generated Elasticsearch client
 
 ## Installation
 
