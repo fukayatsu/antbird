@@ -1,0 +1,44 @@
+#!/usr/bin/env bundle exec ruby
+
+require 'octokit'
+require 'base64'
+require 'json'
+require 'yaml'
+require 'erb'
+
+class ApiMethodsGenerator
+  def initialize(version = '6.2.3')
+    @version = version
+
+    sliced = @version.split(".").slice(0,2)
+    @short_version = sliced.join(".")
+    @class_version = sliced.join("_")
+  end
+  attr_reader :version, :short_version, :class_version
+
+  def run
+    api_spec = fetch_api_spec("v#{version}")
+    File.open("lib/antbird/rest_api/rest_api_v#{class_version}.rb", "w") do |f|
+      f.puts ERB.new(File.read('script/rest_api_template.erb'), 0, "<>").result(binding)
+    end
+  end
+
+  def fetch_api_spec(ref)
+    cache_file = "tmp/api_spec_#{ref}.yml"
+    return YAML.load_file(cache_file) if File.exists?(cache_file)
+
+    client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
+    files = client.contents('elastic/elasticsearch', path: 'rest-api-spec/src/main/resources/rest-api-spec/api', query: {ref: ref})
+    api_spec = {}
+    files.each do |f|
+      puts f.url
+      file = client.content('elastic/elasticsearch', path: f.path, query: { ref: ref })
+      api_spec[File.basename(file.name)] = JSON.parse(Base64.decode64(file.content))
+    end
+
+    File.open(cache_file, 'w') { |f| f.write(api_spec.to_yaml) }
+    api_spec
+  end
+end
+
+puts ApiMethodsGenerator.new(*ARGV).run

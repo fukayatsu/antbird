@@ -1,0 +1,29 @@
+# Generated REST API methods file - DO NOT EDIT!
+# Date: <%= Time.now.strftime("%Y-%m-%d") %>
+# ES version: <%= version %>
+
+module Antbird
+  module RestApi
+    module RestApiV<%= class_version %>
+      def common_params
+        @common_params ||= <%= api_spec['_common.json'] %>
+      end
+<% api_spec.each do |file_name, file_content| %>
+<%  next if file_name == '_common.json' %>
+<%  file_content.each do |api_name, api_spec| %>
+
+      # <%= api_name %> <%= api_spec['methods'] %>
+      # <%= api_spec['documentation'] %>
+      def <%= api_name.tr('.', '_') %>(params = {})
+        api_name = '<%= api_name %>'
+        api_spec = @api_specs[api_name] ||= <%= api_spec %>
+        request(api_name, api_spec, params)
+      end
+<%    if api_spec['methods'] == ['HEAD'] %>
+      alias :<%= api_name.tr('.', '_') %>? :<%= api_name.tr('.', '_') %>
+<%    end %>
+<%  end # file_content.each %>
+<% end # api_spec.each %>
+    end
+  end
+end
