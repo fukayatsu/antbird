@@ -152,5 +152,48 @@ RSpec.describe Antbird::Client do
         expect(client.search(body: match_ccc_query)['hits']['total']).to eq 2
       end
     end
+
+    describe '#bulk' do
+      it do
+        client.indices_create(
+          mappings: {
+            type => {
+              properties: {
+                field1: { type: :text }
+              }
+            }
+          }
+        )
+
+        result = client.bulk(body: [
+          { index: { _id: 1 } },
+          { field1: 'aaa' },
+          { index: { _id: 2 } },
+          { field1: 'bbb' },
+          { index: { _id: 3 } },
+          { field1: 'ccc' },
+        ])
+
+        client.indices_refresh
+
+        match_all_query = { query: { match_all: {} } }
+        match_bbb_query = { query: { match: {field1: 'bbb' } } }
+
+        expect(client.search(body: match_all_query)['hits']['total']).to eq 3
+        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 1
+
+        result = client.bulk(body: [
+          { index: { _id: 1 } },
+          { field1: 'bbb' },
+          { index: { _id: 2 } },
+          { field1: 'bbb' },
+          { delete: { _id: 3 } },
+        ])
+        client.indices_refresh
+
+        expect(client.search(body: match_all_query)['hits']['total']).to eq 2
+        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 2
+      end
+    end
   end
 end

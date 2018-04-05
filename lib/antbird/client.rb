@@ -121,8 +121,12 @@ module Antbird
         when String
           body
         when Array
-          body << nil unless body.last.nil?
-          body.join "\n"
+          if body.all? { |b| b.is_a?(Hash) }
+            body.map { |b| JSON.dump(b) }.join("\n") + "\n"
+          else
+            body << nil unless body.last.nil?
+            body.join "\n"
+          end
         else
           JSON.dump(body)
         end
