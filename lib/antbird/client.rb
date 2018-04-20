@@ -1,27 +1,26 @@
 require 'faraday'
 require 'faraday_middleware'
+require 'antbird/client/errors'
 
 module Antbird
   class Client
-    DEFAULT_VERSION = '6.2.3'
-
     def initialize(
       scope: {},
       url: "http://localhost:9200",
-      version: DEFAULT_VERSION,
+      version: nil,
       read_timeout: 5,
-      open_timeout: 2
-    )
-      @scope     = scope.transform_keys(&:to_sym)
-      @url       = url
-      @version   = version
+      open_timeout: 2)
 
       @read_timeout = read_timeout
       @open_timeout = open_timeout
+      @url       = url
+
+      @scope     = scope.transform_keys(&:to_sym)
+      @version   = version || fetch_version
 
       @api_specs = {}
 
-      class_version = version.split('.')[0,2].join('_')
+      class_version = @version.split('.')[0,2].join('_')
 
       require "antbird/rest_api/rest_api_v#{class_version}"
       extend Antbird::RestApi.const_get "RestApiV#{class_version}"
@@ -41,6 +40,8 @@ module Antbird
     end
 
     def request(api_name, api_spec, params)
+      validate_params(api_spec, params)
+
       body   = extract_body(params)
       scopes = extract_scopes(params)
 
@@ -85,23 +86,20 @@ module Antbird
             req.options[:timeout] = read_timeout if read_timeout
           end
         else
-          raise ArgumentError, "unknown HTTP request method: #{method.inspect}"
+          raise ArgumentError, "Unknown HTTP request method: #{method.inspect}"
         end
 
       if method == :head
         case response.status
         when 200
-          true
+          return true
         when 404
-          false
-        else
-          raise 'error'
+          return false
         end
-      else
-        response.body
       end
 
-      # TODO: handle errors
+      handle_errors!(response)
+      response.body
     end
 
     def extract_scopes(params)
@@ -147,6 +145,29 @@ module Antbird
 
         conn.adapter Faraday.default_adapter
       end
+    end
+
+    private
+
+    def handle_errors!(response)
+      if response.status >= 500
+        raise ServerError, response
+      elsif response.body.is_a?(Hash) && response.body.key?("error")
+        raise RequestError, response
+      end
+    end
+
+    def validate_params(api_spec, params)
+      # TODO case: required parameter is missing
+      # TODO case: invalid parameter name
+      # TODO case: invalid parameter format
+      if api_spec.dig('body', 'required') && !params.key?(:body)
+        raise ArgumentError, 'Body is missing'
+      end
+    end
+
+    def fetch_version
+      connection.get('/').body.dig('version', 'number')
     end
   end
 end

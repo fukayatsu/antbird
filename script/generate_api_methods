@@ -41,4 +41,8 @@ class ApiMethodsGenerator
   end
 end
 
-puts ApiMethodsGenerator.new(*ARGV).run
+travis_yaml = YAML.load_file('.travis.yml')
+versions = travis_yaml['env'].map { |v| v.scan(/ES_VERSION=([\d\.]+)/) }.flatten.uniq
+versions.each do |version|
+  ApiMethodsGenerator.new(version).run
+end

@@ -33,7 +33,6 @@ client = Antbird::Client.new.scoped(index: 'test-index', type: 'test-type')
 
 client = Antbird::Client.new(
   url: 'http://localhost:9200',
-  version: '6.2.3'
   scope: {
     index: 'test-index',
     type: 'test-type'

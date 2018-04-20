@@ -1,5 +1,19 @@
 sudo: false
 language: ruby
 rvm:
-  - 2.5.0
+  - 2.5.1
+env:
+  - ES_VERSION=6.2.4
+  - ES_VERSION=6.1.4
+  - ES_VERSION=5.6.9
+  - ES_VERSION=5.5.3
+
 before_install: gem install bundler -v 1.16.1
+install:
+  - wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+  - tar -xzf elasticsearch-${ES_VERSION}.tar.gz
+  - ./elasticsearch-${ES_VERSION}/bin/elasticsearch &
+  - bundle install
+  - wget --quiet --waitretry=1 --retry-connrefused --timeout=10 --output-document=- http://127.0.0.1:9200
+
+script: bundle exec rspec
