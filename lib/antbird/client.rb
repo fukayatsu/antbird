@@ -2,6 +2,8 @@ require 'faraday'
 require 'faraday_middleware'
 
 module Antbird
+  class UnexpectedStatusCodeError < StandardError; end
+
   class Client
     def initialize(
       scope: {},
@@ -39,6 +41,8 @@ module Antbird
     end
 
     def request(api_name, api_spec, params)
+      validate_params(api_spec, params)
+
       body   = extract_body(params)
       scopes = extract_scopes(params)
 
@@ -83,7 +87,7 @@ module Antbird
             req.options[:timeout] = read_timeout if read_timeout
           end
         else
-          raise ArgumentError, "unknown HTTP request method: #{method.inspect}"
+          raise ArgumentError, "Unknown HTTP request method: #{method.inspect}"
         end
 
       if method == :head
@@ -93,13 +97,11 @@ module Antbird
         when 404
           false
         else
-          raise 'error'
+          raise UnexpectedStatusCodeError, "Unexpected status code returned: #{response.status}"
         end
       else
         response.body
       end
-
-      # TODO: handle errors
     end
 
     def extract_scopes(params)
@@ -148,6 +150,15 @@ module Antbird
     end
 
     private
+
+    def validate_params(api_spec, params)
+      # TODO case: required parameter is missing
+      # TODO case: invalid parameter name
+      # TODO case: invalid parameter format
+      if api_spec.dig('body', 'required') && !params.key?(:body)
+        raise ArgumentError, 'Body is missing'
+      end
+    end
 
     def fetch_version
       connection.get('/').body.dig('version', 'number')
