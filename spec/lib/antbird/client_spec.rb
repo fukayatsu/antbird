@@ -8,7 +8,7 @@ RSpec.describe Antbird::Client do
     end
 
     context 'url specified' do
-      let(:url) { 'http://example.com:9200' }
+      let(:url) { 'http://localhost:9200' }
       subject(:instance) { described_class.new(url: url) }
       it do
         expect { subject }.not_to raise_error

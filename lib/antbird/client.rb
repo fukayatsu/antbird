@@ -3,25 +3,23 @@ require 'faraday_middleware'
 
 module Antbird
   class Client
-    DEFAULT_VERSION = '6.2.3'
-
     def initialize(
       scope: {},
       url: "http://localhost:9200",
-      version: DEFAULT_VERSION,
+      version: nil,
       read_timeout: 5,
-      open_timeout: 2
-    )
-      @scope     = scope.transform_keys(&:to_sym)
-      @url       = url
-      @version   = version
+      open_timeout: 2)
 
       @read_timeout = read_timeout
       @open_timeout = open_timeout
+      @url       = url
+
+      @scope     = scope.transform_keys(&:to_sym)
+      @version   = version || fetch_version
 
       @api_specs = {}
 
-      class_version = version.split('.')[0,2].join('_')
+      class_version = @version.split('.')[0,2].join('_')
 
       require "antbird/rest_api/rest_api_v#{class_version}"
       extend Antbird::RestApi.const_get "RestApiV#{class_version}"
@@ -147,6 +145,12 @@ module Antbird
 
         conn.adapter Faraday.default_adapter
       end
+    end
+
+    private
+
+    def fetch_version
+      connection.get('/').body.dig('version', 'number')
     end
   end
 end
