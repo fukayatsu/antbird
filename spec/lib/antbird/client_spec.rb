@@ -49,7 +49,7 @@ RSpec.describe Antbird::Client do
     let(:type)   { 'test_type' }
     let(:client) { described_class.new(scope: { index: index, type: type }) }
 
-    before { client.indices_delete }
+    before { trap_exception { client.indices_delete } }
 
     describe '#scoped' do
       let(:client) { described_class.new.scoped(index: index, type: type) }
