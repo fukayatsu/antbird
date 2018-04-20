@@ -1,4 +1,4 @@
-guard :rspec, cmd: "bundle exec rspec --format Nc" do
+guard :rspec, cmd: "bundle exec rspec --format progress --format Nc" do
   require "guard/rspec/dsl"
   dsl = Guard::RSpec::Dsl.new(self)
 
