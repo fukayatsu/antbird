@@ -1,9 +1,8 @@
 require 'faraday'
 require 'faraday_middleware'
+require 'antbird/client/errors'
 
 module Antbird
-  class UnexpectedStatusCodeError < StandardError; end
-
   class Client
     def initialize(
       scope: {},
@@ -93,15 +92,14 @@ module Antbird
       if method == :head
         case response.status
         when 200
-          true
+          return true
         when 404
-          false
-        else
-          raise UnexpectedStatusCodeError, "Unexpected status code returned: #{response.status}"
+          return false
         end
-      else
-        response.body
       end
+
+      handle_errors!(response)
+      response.body
     end
 
     def extract_scopes(params)
@@ -150,6 +148,14 @@ module Antbird
     end
 
     private
+
+    def handle_errors!(response)
+      if response.status >= 500
+        raise ServerError, response
+      elsif response.body.is_a?(Hash) && response.body.key?("error")
+        raise RequestError, response
+      end
+    end
 
     def validate_params(api_spec, params)
       # TODO case: required parameter is missing

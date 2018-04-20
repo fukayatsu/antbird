@@ -1,4 +1,11 @@
 RSpec.describe Antbird::Client do
+
+  def trap_exception
+    yield
+  rescue => e
+    e
+  end
+
   describe '#initialize' do
     context 'url not specified' do
       subject(:instance) { described_class.new }
@@ -13,6 +20,27 @@ RSpec.describe Antbird::Client do
       it do
         expect { subject }.not_to raise_error
       end
+    end
+  end
+
+  describe 'handle_errors' do
+    let(:client) { described_class.new }
+    it 'raise ServerError' do
+      error = trap_exception { client.search(body: 'aaa') }
+
+      expect(error).to be_a(Antbird::Client::ServerError)
+      expect(error.response).to be_a Faraday::Response
+      expect(error.status).to eq 500
+      expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
+    end
+
+    it 'raise ServerError' do
+      error = trap_exception { client.search(body: { foo: {} }) }
+
+      expect(error).to be_a(Antbird::Client::RequestError)
+      expect(error.response).to be_a Faraday::Response
+      expect(error.status).to eq 400
+      expect(error.message).to include 'root_cause', 'parsing_exception', 'Unknown key'
     end
   end
 
