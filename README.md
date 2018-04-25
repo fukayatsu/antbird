@@ -38,6 +38,26 @@ client = Antbird::Client.new(
     type: 'test-type'
   }
 )
+
+# OR
+
+require 'faraday_middleware'
+require 'faraday_middleware/aws_sigv4'
+client = Antbird::Client.new(
+  url: ENV['AMAZON_ELASTICSEARCH_SERVICE_URL'],
+  scope: {
+    index: 'test-index',
+    type: 'test-type'
+  }
+) do |f|
+  f.request(
+    :aws_sigv4,
+    service: 'es',
+    region: 'ap-northeast-1',
+    access_key_id: ENV['AWS_ACCESS_KEY_ID'],
+    secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
+  )
+end
 ```
 
 ### Call APIs

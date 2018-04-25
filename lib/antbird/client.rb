@@ -9,11 +9,13 @@ module Antbird
       url: "http://localhost:9200",
       version: nil,
       read_timeout: 5,
-      open_timeout: 2)
+      open_timeout: 2,
+      &block)
 
       @read_timeout = read_timeout
       @open_timeout = open_timeout
-      @url       = url
+      @block        = block
+      @url          = url
 
       @scope     = scope.transform_keys(&:to_sym)
       @version   = version || fetch_version
@@ -137,6 +139,7 @@ module Antbird
 
     def connection
       @connection ||= Faraday.new(url) do |conn|
+        @block.call(conn) if @block
         conn.request :json
         conn.response :json, :content_type => /\bjson$/
 
