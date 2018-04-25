@@ -21,6 +21,19 @@ RSpec.describe Antbird::Client do
         expect { subject }.not_to raise_error
       end
     end
+
+    context 'faraday_middleware' do
+      subject(:instance) do
+        described_class.new do |f|
+          f.request :foo_middleware
+        end
+      end
+      it do
+        expect_any_instance_of(Faraday::Connection).to receive(:request).with(:foo_middleware)
+        expect_any_instance_of(Faraday::Connection).to receive(:request).and_call_original
+        expect { subject }.not_to raise_error
+      end
+    end
   end
 
   describe 'handle_errors' do
