@@ -69,14 +69,21 @@ module Antbird
       response =
         case method
         when :head
-          connection.head(api_path) { |req| req.options[:timeout] = read_timeout if read_timeout }
+          connection.head(api_path) do |req|
+            req.params = params unless params.empty?
+            req.options[:timeout] = read_timeout if read_timeout
+          end
         when :get
-          connection.get(api_path) { |req|
+          connection.get(api_path) do |req|
+            req.params = params unless params.empty?
             req.body = body if body
             req.options[:timeout] = read_timeout if read_timeout
-          }
+          end
         when :put
-          connection.put(api_path, body) { |req| req.options[:timeout] = read_timeout if read_timeout }
+          connection.put(api_path, body) do |req|
+            req.params = params unless params.empty?
+            req.options[:timeout] = read_timeout if read_timeout
+          end
         when :post
           connection.post(api_path, body) do |req|
             req.params = params unless params.empty?
@@ -84,6 +91,7 @@ module Antbird
           end
         when :delete
           connection.delete(api_path) do |req|
+            req.params = params unless params.empty?
             req.body = body if body
             req.options[:timeout] = read_timeout if read_timeout
           end

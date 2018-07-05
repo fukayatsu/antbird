@@ -82,23 +82,30 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#index and #search' do
+      let(:settings) { { number_of_shards: 1 } }
+      let(:mappings) do
+        {
+          type => {
+            properties: {
+              field1: { type: :text }
+            }
+          }
+        }
+      end
+
       it do
         expect(client.indices_exists?). to eq false
 
         client.indices_create(
-          settings: {
-            number_of_shards: 1
-          },
-          mappings: {
-            type => {
-              properties: {
-                field1: { type: :text }
-              }
-            }
+          body: {
+            settings: settings,
+            mappings: mappings
           }
         )
 
         expect(client.indices_exists?). to eq true
+        expect(client.indices_get_settings.dig('test_index', 'settings', 'index', 'number_of_shards')).to eq('1')
+        expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
 
         match_all_query = { query: { match_all: {} } }
         match_foo_query = { query: { match: {field1: 'foo' } } }
@@ -126,10 +133,12 @@ RSpec.describe Antbird::Client do
     describe '#delete_by_query' do
       it do
         client.indices_create(
-          mappings: {
-            type => {
-              properties: {
-                field1: { type: :text }
+          body: {
+            mappings: {
+              type => {
+                properties: {
+                  field1: { type: :text }
+                }
               }
             }
           }
@@ -157,10 +166,12 @@ RSpec.describe Antbird::Client do
     describe '#update_by_query' do
       it do
         client.indices_create(
-          mappings: {
-            type => {
-              properties: {
-                field1: { type: :text }
+          body: {
+            mappings: {
+              type => {
+                properties: {
+                  field1: { type: :text }
+                }
               }
             }
           }
@@ -197,10 +208,12 @@ RSpec.describe Antbird::Client do
     describe '#bulk' do
       it do
         client.indices_create(
-          mappings: {
-            type => {
-              properties: {
-                field1: { type: :text }
+          body: {
+            mappings: {
+              type => {
+                properties: {
+                  field1: { type: :text }
+                }
               }
             }
           }

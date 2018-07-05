@@ -69,11 +69,13 @@ client = Antbird::Client.new(
 
 client.indices_exists? # => false
 client.indices_create(
-  settings: { number_of_shards: 1 },
-  mappings: {
-    'test-type': {
-      properties: {
-        field1: { type: :text }
+  body: {
+    settings: { number_of_shards: 1 },
+    mappings: {
+      'test-type': {
+        properties: {
+          field1: { type: :text }
+        }
       }
     }
   }
