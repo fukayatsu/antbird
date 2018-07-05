@@ -2,6 +2,8 @@
 
 Nearly auto-generated Elasticsearch client
 
+[![Build Status](https://travis-ci.org/fukayatsu/antbird.svg?branch=master)](https://travis-ci.org/fukayatsu/antbird)
+
 ## Installation
 
 Add this line to your application's Gemfile:
