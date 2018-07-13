@@ -47,7 +47,7 @@ module Antbird
       body   = extract_body(params)
       scopes = extract_scopes(params)
 
-      # 長い方からチェック
+      # Greedy match
       api_path = nil
       api_spec['url']['paths'].sort { |a, b| b.size <=> a.size }.each do |path|
         embeded = path.gsub(/{([a-z_\-}]+)}/) do |match|
@@ -65,6 +65,7 @@ module Antbird
       method = methods.include?(:post) ? :post : methods.first
 
       read_timeout = params.delete(:read_timeout)
+      params.reject! { |_, v| v.nil? }
 
       response =
         case method

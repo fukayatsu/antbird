@@ -112,9 +112,10 @@ RSpec.describe Antbird::Client do
         match_bar_query = { query: { match: {field1: 'bar' } } }
         match_baz_query = { query: { match: {field1: 'baz' } } }
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 0
+        expect(client.search(body: match_all_query, timeout: '5s')['hits']['total']).to eq 0
 
-        client.index(id: 'doc-1', body: { field1: 'foo bar' })
+        # `timeout` param should be dropped if nil
+        client.index(id: 'doc-1', body: { field1: 'foo bar' }, timeout: nil)
         client.indices_refresh
 
         expect(client.search(body: match_all_query)['hits']['hits'].first['_id']).to eq('doc-1')
