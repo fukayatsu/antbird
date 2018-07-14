@@ -9,24 +9,31 @@ RSpec.describe Antbird::Client do
   describe '#initialize' do
     context 'url not specified' do
       subject(:instance) { described_class.new }
-      it do
+
+      it 'not raise error' do
         expect { subject }.not_to raise_error
+      end
+
+      it 'not call request' do
+        expect_any_instance_of(Faraday::Connection).not_to receive(:request)
       end
     end
 
     context 'url specified' do
       let(:url) { 'http://localhost:9200' }
       subject(:instance) { described_class.new(url: url) }
-      it do
+
+      it 'not raise error' do
         expect { subject }.not_to raise_error
       end
     end
 
     context 'faraday_middleware' do
       subject(:instance) do
-        described_class.new do |f|
+        client = described_class.new do |f|
           f.request :foo_middleware
         end
+        client.cat_indices
       end
       it do
         expect_any_instance_of(Faraday::Connection).to receive(:request).with(:foo_middleware)
@@ -63,6 +70,18 @@ RSpec.describe Antbird::Client do
     let(:client) { described_class.new(scope: { index: index, type: type }) }
 
     before { trap_exception { client.indices_delete } }
+
+    describe '#method_missing' do
+      let(:another_client) { described_class.new(scope: { index: index, type: type }) }
+
+      it do
+        expect(another_client).to receive(:method_missing).and_call_original.once
+
+        another_client.indices_exists?
+        another_client.indices_exists?
+        another_client.indices_exists?
+      end
+    end
 
     describe '#scoped' do
       let(:client) { described_class.new.scoped(index: index, type: type) }

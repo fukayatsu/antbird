@@ -18,14 +18,9 @@ module Antbird
       @url          = url
 
       @scope     = scope.transform_keys(&:to_sym)
-      @version   = version || fetch_version
+      @version   = version
 
       @api_specs = {}
-
-      class_version = @version.split('.')[0,2].join('_')
-
-      require "antbird/rest_api/rest_api_v#{class_version}"
-      extend Antbird::RestApi.const_get "RestApiV#{class_version}"
     end
     attr_reader :scope, :url, :version
     attr_reader :read_timeout, :open_timeout
@@ -180,6 +175,30 @@ module Antbird
 
     def fetch_version
       connection.get('/').body.dig('version', 'number')
+    end
+
+    def ensure_api_spec_loaded
+      return if api_specs_loaded?
+
+      @version ||= fetch_version
+      class_version = @version.split('.')[0, 2].join('_')
+      require "antbird/rest_api/rest_api_v#{class_version}"
+      extend Antbird::RestApi.const_get "RestApiV#{class_version}"
+
+      @api_specs_loaded = true
+    end
+
+    def api_specs_loaded?
+      !!@api_specs_loaded
+    end
+
+    def method_missing(name, *args, &block)
+      return super if api_specs_loaded?
+
+      ensure_api_spec_loaded
+
+      return super unless respond_to?(name)
+      __send__(name, *args, &block)
     end
   end
 end
