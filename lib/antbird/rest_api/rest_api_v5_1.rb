@@ -6,7 +6,7 @@ module Antbird
   module RestApi
     module RestApiV5_1
       def common_params
-        @common_params ||= 
+        @common_params ||= {}
       end
 
       # bulk ["POST", "PUT"]
