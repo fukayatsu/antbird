@@ -7,7 +7,7 @@ require 'yaml'
 require 'erb'
 
 class ApiMethodsGenerator
-  def initialize(version = '6.2.3')
+  def initialize(version)
     @version = version
 
     sliced = @version.split(".").slice(0,2)
