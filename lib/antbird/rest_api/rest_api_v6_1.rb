@@ -1,5 +1,5 @@
 # Generated REST API methods file - DO NOT EDIT!
-# Date: 2018-04-20
+# Date: 2019-07-09
 # ES version: 6.1.4
 
 module Antbird

@@ -1,14 +1,17 @@
 sudo: false
 language: ruby
 rvm:
-  - 2.5.3
+  - 2.6.3
 env:
+  - ES_VERSION=6.8.1
+  - ES_VERSION=6.7.2
+  - ES_VERSION=6.6.2
   - ES_VERSION=6.5.4
   - ES_VERSION=6.4.3
   - ES_VERSION=6.3.2
   - ES_VERSION=6.2.4
   - ES_VERSION=6.1.4
-  - ES_VERSION=5.6.9
+  - ES_VERSION=5.6.15
   - ES_VERSION=5.5.3
   - ES_VERSION=5.1.2
 
