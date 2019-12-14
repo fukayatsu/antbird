@@ -16,9 +16,10 @@ env:
 
 before_install: gem install bundler -v 1.16.1
 install:
-  - wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
-  - tar -xzf elasticsearch-${ES_VERSION}.tar.gz
-  - ./elasticsearch-${ES_VERSION}/bin/elasticsearch &
+  - if [[ "${ES_VERSION:0:1}" = "7" ]]; then suffix='-linux-x86_64'; else suffix=''; fi
+  - curl https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${suffix}.tar.gz | tar xz -C /tmp
+  - ls /tmp
+  - /tmp/elasticsearch-${ES_VERSION}/bin/elasticsearch &
   - bundle install
   - wget --quiet --waitretry=1 --retry-connrefused --timeout=10 --output-document=- http://127.0.0.1:9200
 
