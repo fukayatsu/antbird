@@ -1,9 +1,19 @@
 RSpec.describe Antbird::Client do
-
   def trap_exception
     yield
   rescue => e
     e
+  end
+
+  def elasticsearch_v7?
+    es_version = ENV.fetch('ES_VERSION', '7.5.0')
+    Gem::Version.new(es_version) >= Gem::Version.new('7.0.0')
+  end
+
+  def expect_count(response, expected)
+    hits_total = response['hits']['total']
+    count = elasticsearch_v7? ? hits_total['value'] : hits_total
+    expect(count).to eq(expected)
   end
 
   describe '#initialize' do
@@ -75,12 +85,26 @@ RSpec.describe Antbird::Client do
   describe 'api methods' do
     let(:index)  { 'test_index' }
     let(:type)   { 'test_type' }
-    let(:client) { described_class.new(scope: { index: index, type: type }) }
+    let(:scope) do
+      if elasticsearch_v7?
+        { index: index }
+      else
+        { index: index, type: type }
+      end
+    end
+    let(:client) { described_class.new(scope: scope) }
 
     before { trap_exception { client.indices_delete } }
 
     describe '#method_missing' do
-      let(:another_client) { described_class.new(scope: { index: index, type: type }) }
+      let(:scope) do
+        if elasticsearch_v7?
+          { index: index }
+        else
+          { index: index, type: type }
+        end
+      end
+      let(:another_client) { described_class.new(scope: scope) }
 
       it do
         expect(another_client).to receive(:method_missing).and_call_original.once
@@ -110,14 +134,19 @@ RSpec.describe Antbird::Client do
 
     describe '#index and #search' do
       let(:settings) { { number_of_shards: 1 } }
-      let(:mappings) do
+      let(:properties_hash) do
         {
-          type => {
-            properties: {
-              field1: { type: :text }
-            }
+          properties: {
+            field1: { type: :text }
           }
         }
+      end
+      let(:mappings) do
+        if elasticsearch_v7?
+          properties_hash
+        else
+          { type => properties_hash }
+        end
       end
 
       it do
@@ -132,14 +161,19 @@ RSpec.describe Antbird::Client do
 
         expect(client.indices_exists?). to eq true
         expect(client.indices_get_settings.dig('test_index', 'settings', 'index', 'number_of_shards')).to eq('1')
-        expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
+
+        if elasticsearch_v7?
+          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
+        else
+          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
+        end
 
         match_all_query = { query: { match_all: {} } }
         match_foo_query = { query: { match: {field1: 'foo' } } }
         match_bar_query = { query: { match: {field1: 'bar' } } }
         match_baz_query = { query: { match: {field1: 'baz' } } }
 
-        expect(client.search(body: match_all_query, timeout: '5s')['hits']['total']).to eq 0
+        expect_count(client.search(body: match_all_query, timeout: '5s'), 0)
 
         # `timeout` param should be dropped if nil
         client.index(id: 'doc-1', body: { field1: 'foo bar' }, timeout: nil)
@@ -147,28 +181,38 @@ RSpec.describe Antbird::Client do
 
         expect(client.search(body: match_all_query)['hits']['hits'].first['_id']).to eq('doc-1')
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 1
-        expect(client.search(body: match_foo_query)['hits']['total']).to eq 1
-        expect(client.search(body: match_bar_query)['hits']['total']).to eq 1
-        expect(client.search(body: match_baz_query)['hits']['total']).to eq 0
+        expect_count(client.search(body: match_all_query), 1)
+        expect_count(client.search(body: match_foo_query), 1)
+        expect_count(client.search(body: match_bar_query), 1)
+        expect_count(client.search(body: match_baz_query), 0)
 
         client.delete(id: 'doc-1')
         client.indices_refresh
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 0
+
+        expect_count(client.search(body: match_all_query), 0)
       end
     end
 
     describe '#delete_by_query' do
+      let(:properties_hash) do
+        {
+          properties: {
+            field1: { type: :text }
+          }
+        }
+      end
+      let(:mappings) do
+        if elasticsearch_v7?
+          properties_hash
+        else
+          { type => properties_hash }
+        end
+      end
+
       it do
         client.indices_create(
           body: {
-            mappings: {
-              type => {
-                properties: {
-                  field1: { type: :text }
-                }
-              }
-            }
+            mappings: mappings
           }
         )
 
@@ -180,30 +224,36 @@ RSpec.describe Antbird::Client do
         match_all_query = { query: { match_all: {} } }
         match_bbb_query = { query: { match: {field1: 'bbb' } } }
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 3
-        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 2
+        expect_count(client.search(body: match_all_query), 3)
+        expect_count(client.search(body: match_bbb_query), 2)
 
         client.delete_by_query(body: match_bbb_query)
         client.indices_refresh
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 1
-        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 0
+        expect_count(client.search(body: match_all_query), 1)
+        expect_count(client.search(body: match_bbb_query), 0)
       end
     end
 
     describe '#update_by_query' do
-      it do
-        client.indices_create(
-          body: {
-            mappings: {
-              type => {
-                properties: {
-                  field1: { type: :text }
-                }
-              }
-            }
+      let(:properties_hash) do
+        {
+          properties: {
+            field1: { type: :text }
           }
-        )
+        }
+      end
+
+      let(:mappings) do
+        if elasticsearch_v7?
+          properties_hash
+        else
+          { type => properties_hash }
+        end
+      end
+
+      it do
+        client.indices_create(body: { mappings: mappings })
 
         client.index(id: 'doc-1', body: { field1: 'aaa' })
         client.index(id: 'doc-2', body: { field1: 'bbb' })
@@ -211,11 +261,11 @@ RSpec.describe Antbird::Client do
         client.indices_refresh
 
         match_all_query = { query: { match_all: {} } }
-        match_bbb_query = { query: { match: {field1: 'bbb' } } }
-        match_ccc_query = { query: { match: {field1: 'ccc' } } }
+        match_bbb_query = { query: { match: { field1: 'bbb' } } }
+        match_ccc_query = { query: { match: { field1: 'ccc' } } }
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 3
-        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 2
+        expect_count(client.search(body: match_all_query), 3)
+        expect_count(client.search(body: match_bbb_query), 2)
 
         client.update_by_query(
           conflicts: :proceed,
@@ -228,22 +278,32 @@ RSpec.describe Antbird::Client do
         )
         client.indices_refresh
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 3
-        expect(client.search(body: match_ccc_query)['hits']['total']).to eq 2
+        expect_count(client.search(body: match_all_query), 3)
+        expect_count(client.search(body: match_ccc_query), 2)
       end
     end
 
     describe '#bulk' do
+      let(:properties_hash) do
+        {
+          properties: {
+            field1: { type: :text }
+          }
+        }
+      end
+
+      let(:mappings) do
+        if elasticsearch_v7?
+          properties_hash
+        else
+          { type => properties_hash }
+        end
+      end
+
       it do
         client.indices_create(
           body: {
-            mappings: {
-              type => {
-                properties: {
-                  field1: { type: :text }
-                }
-              }
-            }
+            mappings: mappings
           }
         )
 
@@ -261,8 +321,8 @@ RSpec.describe Antbird::Client do
         match_all_query = { query: { match_all: {} } }
         match_bbb_query = { query: { match: {field1: 'bbb' } } }
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 3
-        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 1
+        expect_count(client.search(body: match_all_query), 3)
+        expect_count(client.search(body: match_bbb_query), 1)
 
         result = client.bulk(body: [
           { index: { _id: 1 } },
@@ -273,8 +333,8 @@ RSpec.describe Antbird::Client do
         ])
         client.indices_refresh
 
-        expect(client.search(body: match_all_query)['hits']['total']).to eq 2
-        expect(client.search(body: match_bbb_query)['hits']['total']).to eq 2
+        expect_count(client.search(body: match_all_query), 2)
+        expect_count(client.search(body: match_bbb_query), 2)
       end
     end
   end
