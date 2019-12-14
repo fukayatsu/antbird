@@ -20,7 +20,7 @@ install:
   - if [[ "${ES_VERSION:0:1}" = "7" ]]; then suffix='-linux-x86_64'; else suffix=''; fi
   - download_url=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${suffix}.tar.gz
   - echo $download_url
-  - curl $download_url | tar xzm -C /tmp
+  - curl $download_url | tar xzmp -C /tmp
   - ls /tmp
   - /tmp/elasticsearch-${ES_VERSION}/bin/elasticsearch &
   - bundle install
