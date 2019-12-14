@@ -19,7 +19,7 @@ module Antbird
         api_spec = @api_specs[api_name] ||= <%= api_spec %>
         request(api_name, api_spec, params)
       end
-<%    if api_spec['methods'] == ['HEAD'] %>
+<%    if api_spec['methods'] == ['HEAD'] || api_spec['url']['paths'].map{ |path| path.is_a?(Hash) ? path['methods'] : false }.all? { |methods| methods == ['HEAD'] } %>
       alias :<%= api_name.tr('.', '_') %>? :<%= api_name.tr('.', '_') %>
 <%    end %>
 <%  end # file_content.each %>
