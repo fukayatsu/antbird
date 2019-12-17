@@ -1,4 +1,4 @@
-name: RSpec
+name: build
 
 on: [push]
 

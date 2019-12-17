@@ -41,8 +41,8 @@ class ApiMethodsGenerator
   end
 end
 
-travis_yaml = YAML.load_file('.travis.yml')
-versions = travis_yaml['env'].map { |v| v.scan(/ES_VERSION=([\d\.]+)/) }.flatten.uniq
+workflow_yaml = YAML.load_file('.github/workflows/build.yml')
+versions = workflow_yaml.dig('jobs', 'build', 'strategy', 'matrix', 'elasticsearch').uniq
 versions.each do |version|
   ApiMethodsGenerator.new(version).run
 end
