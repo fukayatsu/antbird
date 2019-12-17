@@ -44,7 +44,13 @@ module Antbird
 
       # Greedy match
       api_path = nil
+      path_methods = nil
       api_spec['url']['paths'].sort { |a, b| b.size <=> a.size }.each do |path|
+        if path.is_a?(Hash)
+          path_methods = path['methods']
+          path = path['path']
+        end
+
         embeded = path.gsub(/{([a-z_\-}]+)}/) do |match|
           scopes[$1.to_sym] || @scope[$1.to_sym] || match
         end
@@ -56,7 +62,7 @@ module Antbird
         raise "API path not found: paths: #{api_spec['url']['paths']}, scope: #{@scope}"
       end
 
-      methods = api_spec['methods'].map(&:downcase).map(&:to_sym)
+      methods = (Array(path_methods) + Array(api_spec['methods'])).map(&:downcase).map(&:to_sym)
       method = methods.include?(:post) ? :post : methods.first
 
       read_timeout = params.delete(:read_timeout)
