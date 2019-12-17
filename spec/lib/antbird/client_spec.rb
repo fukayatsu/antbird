@@ -12,7 +12,7 @@ RSpec.describe Antbird::Client do
 
   def expect_count(response, expected)
     hits_total = response['hits']['total']
-    count = elasticsearch_v7? ? hits_total['value'] : hits_total
+    count = hits_total.is_a?(Hash) ? hits_total['value'] : hits_total
     expect(count).to eq(expected)
   end
 
