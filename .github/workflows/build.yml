@@ -28,7 +28,7 @@ jobs:
     - name: Start Elasticsearch
       run: |
         docker run -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" \
-          docker.elastic.co/elasticsearch/elasticsearch:${{matrix.elasticsearch}}
+          docker.elastic.co/elasticsearch/elasticsearch-oss:${{matrix.elasticsearch}}
         docker ps
     - name: Build and test with Rake
       run: |
