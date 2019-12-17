@@ -6,7 +6,7 @@ RSpec.describe Antbird::Client do
   end
 
   def elasticsearch_v7?
-    es_version = ENV.fetch('ES_VERSION', '7.5.0')
+    es_version = described_class.new.send(:fetch_version)
     Gem::Version.new(es_version) >= Gem::Version.new('7.0.0')
   end
 

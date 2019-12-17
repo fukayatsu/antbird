@@ -1,0 +1,43 @@
+name: RSpec
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elasticsearch:
+        - 7.5.0
+        - 7.4.2
+        - 7.3.2
+        - 7.2.1
+        - 7.1.1
+        - 7.0.1
+        - 6.8.5
+        - 6.7.2
+        - 6.6.2
+        - 6.5.4
+        - 6.4.3
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Ruby 2.6
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: 2.6.x
+    - name: Install and start Elasticsearch
+      run: |
+        ES_VERSION=${{matrix.elasticsearch}}
+        echo ES_VERSION: ${ES_VERSION}
+        if [[ "${ES_VERSION:0:1}" = "7" ]]; then suffix='-linux-x86_64'; else suffix=''; fi
+        download_url=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${suffix}.tar.gz
+        echo $download_url
+        mkdir -p ./tmp
+        curl $download_url | tar xzmp -C ./tmp
+        ls ./tmp
+        ./tmp/elasticsearch-${ES_VERSION}/bin/elasticsearch -d
+    - name: Build and test with Rake
+      run: |
+        gem install bundler
+        bundle install --jobs 4 --retry 3
+        bundle exec rspec
