@@ -2,7 +2,7 @@
 
 Nearly auto-generated Elasticsearch client
 
-[![Build Status](https://travis-ci.org/fukayatsu/antbird.svg?branch=master)](https://travis-ci.org/fukayatsu/antbird)
+![Build Status](https://github.com/fukayatsu/antbird/workflows/build/badge.svg)
 
 ## Installation
 
@@ -113,8 +113,8 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/fukaya
 
 ### How to support newer version of Elasticsearch
 
-1. Add `ES_VERSION=x.y.z` to `env` on `.travis.yml`
-    - Only one line for `x.y` version
+1. Add Elasticsearch version to `jobs.build.strategy.matrix.elasticsearch` on `.github/workflows/build.yml`
+    - Only one line for `x.y.*` version
 1. `script/generate_api_methods`
     - Set `GITHUB_TOKEN=***` env for GitHub API Limit
 
