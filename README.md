@@ -2,7 +2,7 @@
 
 Nearly auto-generated Elasticsearch client
 
-![Build Status](https://github.com/fukayatsu/antbird/workflows/build/badge.svg)
+[![Build Status](https://github.com/fukayatsu/antbird/workflows/build/badge.svg)](https://github.com/fukayatsu/antbird/actions)
 
 ## Installation
 
