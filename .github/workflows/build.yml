@@ -25,17 +25,10 @@ jobs:
       uses: actions/setup-ruby@v1
       with:
         ruby-version: 2.6.x
-    - name: Install and start Elasticsearch
+    - name: Start Elasticsearch
       run: |
-        ES_VERSION=${{matrix.elasticsearch}}
-        echo ES_VERSION: ${ES_VERSION}
-        if [[ "${ES_VERSION:0:1}" = "7" ]]; then suffix='-linux-x86_64'; else suffix=''; fi
-        download_url=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}${suffix}.tar.gz
-        echo $download_url
-        mkdir -p ./tmp
-        curl $download_url | tar xzmp -C ./tmp
-        ls ./tmp
-        ./tmp/elasticsearch-${ES_VERSION}/bin/elasticsearch -d
+        docker run -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" \
+          docker.elastic.co/elasticsearch/elasticsearch:${{matrix.elasticsearch}}
     - name: Build and test with Rake
       run: |
         gem install bundler
