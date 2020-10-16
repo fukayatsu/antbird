@@ -8,12 +8,12 @@ jobs:
     strategy:
       matrix:
         elasticsearch:
-        - 7.5.0
+        - 7.5.2
         - 7.4.2
         - 7.3.2
         - 7.2.1
         - 7.1.1
-        - 6.8.5
+        - 6.8.12
     steps:
     - uses: actions/checkout@v1
     - name: Set up Ruby 2.6
@@ -30,5 +30,5 @@ jobs:
         gem install bundler
         bundle install --jobs 4 --retry 3
         # wait for elasticsearch
-        curl -q --retry 10 --retry-delay 5 --retry-connrefused http://localhost:9200
+        # curl -q --retry 10 --retry-delay 5 --retry-connrefused http://localhost:9200
         bundle exec rspec
