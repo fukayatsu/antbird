@@ -27,6 +27,10 @@ RSpec.describe Antbird::Client do
       it 'not call request' do
         expect_any_instance_of(Faraday::Connection).not_to receive(:request)
       end
+
+      it 'use default adapter' do
+        expect(instance.connection.adapter).to eq(Faraday::Adapter::NetHttp)
+      end
     end
 
     context 'url specified' do
@@ -38,6 +42,18 @@ RSpec.describe Antbird::Client do
       end
     end
 
+    context 'adapter: net_http_persistent' do
+      subject(:instance) do
+        described_class.new do |f|
+          f.adapter :net_http_persistent
+        end
+      end
+
+      it 'use net_http_persistent adapter' do
+        expect(instance.connection.adapter).to eq(Faraday::Adapter::NetHttpPersistent)
+      end
+    end
+
     context 'faraday_middleware' do
       subject(:instance) do
         client = described_class.new do |f|
@@ -45,6 +61,7 @@ RSpec.describe Antbird::Client do
         end
         client.cat_indices
       end
+
       it do
         expect_any_instance_of(Faraday::Connection).to receive(:request).with(:foo_middleware)
         expect_any_instance_of(Faraday::Connection).to receive(:request).and_call_original

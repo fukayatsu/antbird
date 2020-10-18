@@ -52,6 +52,12 @@ client = Antbird::Client.new(
     type: 'test-type'
   }
 ) do |f|
+  # https://github.com/lostisland/faraday/blob/master/docs/adapters/net_http_persistent.md
+  f.adapter :net_http_persistent, pool_size: 5 do |http|
+    http.idle_timeout = 100
+  end
+
+  # https://github.com/winebarrel/faraday_middleware-aws-sigv4
   f.request(
     :aws_sigv4,
     service: 'es',
