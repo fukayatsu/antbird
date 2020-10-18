@@ -151,12 +151,10 @@ module Antbird
       @connection ||= Faraday.new(url) do |conn|
         @block.call(conn) if @block
         conn.request :json
-        conn.response :json, :content_type => /\bjson$/
+        conn.response :json, content_type: /\bjson$/
 
         conn.options[:timeout]      = read_timeout
         conn.options[:open_timeout] = open_timeout
-
-        conn.adapter Faraday.default_adapter
       end
     end
 
