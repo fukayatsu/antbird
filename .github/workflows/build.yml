@@ -6,6 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # 1. Run script/list_versions
         # 2. Check https://www.elastic.co/jp/support/eol
