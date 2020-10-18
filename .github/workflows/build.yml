@@ -23,13 +23,12 @@ jobs:
         env:
           discovery.type: single-node
     steps:
-    - uses: actions/checkout@v1
-    - name: Set up Ruby 2.6
-      uses: actions/setup-ruby@v1
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: 2.6.x
-    - name: Build and test with Rake
-      run: |
-        gem install bundler
-        bundle install --jobs 4 --retry 3
-        bundle exec rspec
+        ruby-version: 2.6
+        bundler-cache: true
+    - run: bundle install --jobs 4 --retry 3
+    - name: Wait for elasticsearch
+      run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
+    - run: bundle exec rspec
