@@ -58,18 +58,18 @@ RSpec.describe Antbird::Client do
     it 'raise ServerError' do
       error = trap_exception { client.search(body: 'aaa') }
 
-      # TODO check v5.2–v5.4
-      if Gem::Version.create(client.version) >= Gem::Version.create('5.2')
+      if Gem::Version.create(client.version) >= Gem::Version.create('7.6.0')
+        expect(error).to be_a(Antbird::Client::RequestError)
+        expect(error.status).to eq 400
+        expect(error.message).to include "Unrecognized token 'aaa'"
+      else
         expect(error).to be_a(Antbird::Client::ServerError)
-        expect(error.response).to be_a Faraday::Response
         expect(error.status).to eq 500
         expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
-      else
-        expect(error).to be_a(Antbird::Client::RequestError)
-        expect(error.response).to be_a Faraday::Response
-        expect(error.status).to eq 400
-        expect(error.message).to include 'root_cause', 'parse_exception', 'reason', 'Failed to derive xcontent'
       end
+
+      expect(error.response).to be_a Faraday::Response
+      expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
     end
 
     it 'raise ServerError' do
