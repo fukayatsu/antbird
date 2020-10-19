@@ -44,9 +44,7 @@ RSpec.describe Antbird::Client do
 
     context 'adapter: net_http_persistent' do
       subject(:instance) do
-        described_class.new do |f|
-          f.adapter :net_http_persistent
-        end
+        described_class.new(adapter: :net_http_persistent)
       end
 
       it 'use net_http_persistent adapter' do
