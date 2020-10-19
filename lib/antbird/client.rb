@@ -10,10 +10,12 @@ module Antbird
       version: nil,
       read_timeout: 5,
       open_timeout: 2,
+      adapter: ::Faraday.default_adapter,
       &block)
 
       @read_timeout = read_timeout
       @open_timeout = open_timeout
+      @adapter      = adapter
       @block        = block
       @url          = url
 
@@ -23,7 +25,7 @@ module Antbird
       @api_specs = {}
     end
     attr_reader :scope, :url, :version
-    attr_reader :read_timeout, :open_timeout
+    attr_reader :read_timeout, :open_timeout, :adapter
     attr_reader :api_specs
 
     def scoped(new_scope = {})
@@ -149,12 +151,15 @@ module Antbird
 
     def connection
       @connection ||= Faraday.new(url) do |conn|
-        @block.call(conn) if @block
+        @block&.call(conn)
+
         conn.request :json
         conn.response :json, content_type: /\bjson$/
 
         conn.options[:timeout]      = read_timeout
         conn.options[:open_timeout] = open_timeout
+
+        conn.adapter adapter
       end
     end
 
