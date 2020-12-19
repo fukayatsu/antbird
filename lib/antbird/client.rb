@@ -49,7 +49,7 @@ module Antbird
       api_path = nil
       api_path_template = nil
       path_methods = nil
-      api_spec['url']['paths'].sort { |a, b| b.size <=> a.size }.each do |path|
+      sort_url_paths(api_spec['url']['paths']).each do |path|
         if path.is_a?(Hash)
           path_methods = path['methods']
           path = path['path']
@@ -191,6 +191,18 @@ module Antbird
     end
 
     private
+
+    # NOTE: stable sort
+    def sort_url_paths(url_paths)
+      i = 0
+      url_paths.sort_by do |path|
+        if path.is_a?(Hash)
+          [-path['path'].count('{'), (path['deprecated'] ? 1 : 0), i += 1]
+        else
+          [-path.count('{'), i += 1]
+        end
+      end
+    end
 
     def handle_errors!(response)
       if response.status >= 500
