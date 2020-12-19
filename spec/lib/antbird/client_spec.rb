@@ -192,6 +192,8 @@ RSpec.describe Antbird::Client do
 
         # `timeout` param should be dropped if nil
         client.index(id: 'doc-1', body: { field1: 'foo bar' }, timeout: nil)
+        expect(client.last_request[:method]).to eq(:put)
+
         client.indices_refresh
 
         expect(client.search(body: match_all_query)['hits']['hits'].first['_id']).to eq('doc-1')
