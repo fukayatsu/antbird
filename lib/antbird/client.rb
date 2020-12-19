@@ -26,7 +26,7 @@ module Antbird
     end
     attr_reader :scope, :url, :version
     attr_reader :read_timeout, :open_timeout, :adapter
-    attr_reader :api_specs
+    attr_reader :api_specs, :last_request
 
     def scoped(new_scope = {})
       Client.new(
@@ -43,9 +43,11 @@ module Antbird
 
       body   = extract_body(params)
       scopes = extract_scopes(params)
+      forced_method = extract_method(params)
 
       # Greedy match
       api_path = nil
+      api_path_template = nil
       path_methods = nil
       api_spec['url']['paths'].sort { |a, b| b.size <=> a.size }.each do |path|
         if path.is_a?(Hash)
@@ -57,18 +59,39 @@ module Antbird
           scopes[$1.to_sym] || @scope[$1.to_sym] || match
         end
 
-        break api_path = embeded unless embeded.include?('{')
+        unless embeded.include?('{')
+          api_path_template = path
+          api_path = embeded
+          break
+        end
       end
 
       unless api_path
         raise "API path not found: paths: #{api_spec['url']['paths']}, scope: #{@scope}"
       end
 
-      methods = (Array(path_methods) + Array(api_spec['methods'])).map(&:downcase).map(&:to_sym)
-      method = methods.include?(:post) ? :post : methods.first
+      methods = (path_methods || api_spec['methods']).map { |m| m.downcase.to_sym }
+      method =
+        if forced_method
+          forced_method
+        elsif methods.include?(:put)
+          :put
+        elsif methods.include?(:post)
+          :post
+        else
+          methods.first
+        end
 
       read_timeout = params.delete(:read_timeout)
       params.reject! { |_, v| v.nil? }
+
+      @last_request = {
+        method: method,
+        forced_method: forced_method,
+        api_path: api_path,
+        api_path_template: api_path_template,
+        params: params
+      }
 
       response =
         case method
@@ -114,6 +137,10 @@ module Antbird
 
       handle_errors!(response)
       response.body
+    end
+
+    def extract_method(params)
+      params.delete(:method)&.to_sym
     end
 
     def extract_scopes(params)
