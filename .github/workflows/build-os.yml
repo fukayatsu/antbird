@@ -16,6 +16,14 @@ jobs:
         - 1.2.0
         - 1.1.0
         - 1.0.0
+    services:
+      opensearch:
+        image: opensearchproject/opensearch:${{matrix.search_versions}}
+        ports:
+          - 9200:9200
+        env:
+          discovery.type: single-node
+          plugins.security.disabled: true
     steps:
     - name: Configure sysctl limits
       run: |
@@ -23,8 +31,6 @@ jobs:
         sudo sysctl -w vm.swappiness=1
         sudo sysctl -w fs.file-max=262144
         sudo sysctl -w vm.max_map_count=262144
-    - name: Runs OpenSearch
-      run: docker run -p 9200:9200 -e "discovery.type=single-node" -e "plugins.security.disabled=true" opensearchproject/opensearch:${{matrix.search_versions}}
     - uses: actions/checkout@v2
     - uses: ruby/setup-ruby@v1
       with:
