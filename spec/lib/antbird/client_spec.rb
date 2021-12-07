@@ -5,9 +5,12 @@ RSpec.describe Antbird::Client do
     e
   end
 
-  def elasticsearch_v7?
-    es_version = described_class.new.send(:fetch_version)
-    Gem::Version.new(es_version) >= Gem::Version.new('7.0.0')
+  def  elasticsearch_v7_0_compatible?
+    described_class.new. elasticsearch_v7_0_compatible?
+  end
+
+  def elasticsearch_v7_6_compatible?
+    described_class.new.elasticsearch_v7_6_compatible?
   end
 
   def expect_count(response, expected)
@@ -73,7 +76,7 @@ RSpec.describe Antbird::Client do
     it 'raise ServerError' do
       error = trap_exception { client.search(body: 'aaa') }
 
-      if Gem::Version.create(client.version) >= Gem::Version.create('7.6.0')
+      if elasticsearch_v7_6_compatible?
         expect(error).to be_a(Antbird::Client::RequestError)
         expect(error.status).to eq 400
         expect(error.message).to include "Unrecognized token 'aaa'"
@@ -101,7 +104,7 @@ RSpec.describe Antbird::Client do
     let(:index)  { 'test_index' }
     let(:type)   { 'test_type' }
     let(:scope) do
-      if elasticsearch_v7?
+      if elasticsearch_v7_0_compatible?
         { index: index }
       else
         { index: index, type: type }
@@ -113,7 +116,7 @@ RSpec.describe Antbird::Client do
 
     describe '#method_missing' do
       let(:scope) do
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           { index: index }
         else
           { index: index, type: type }
@@ -157,7 +160,7 @@ RSpec.describe Antbird::Client do
         }
       end
       let(:mappings) do
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           properties_hash
         else
           { type => properties_hash }
@@ -177,7 +180,7 @@ RSpec.describe Antbird::Client do
         expect(client.indices_exists?). to eq true
         expect(client.indices_get_settings.dig('test_index', 'settings', 'index', 'number_of_shards')).to eq('1')
 
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
         else
           expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
@@ -219,7 +222,7 @@ RSpec.describe Antbird::Client do
         }
       end
       let(:mappings) do
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           properties_hash
         else
           { type => properties_hash }
@@ -262,7 +265,7 @@ RSpec.describe Antbird::Client do
       end
 
       let(:mappings) do
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           properties_hash
         else
           { type => properties_hash }
@@ -310,7 +313,7 @@ RSpec.describe Antbird::Client do
       end
 
       let(:mappings) do
-        if elasticsearch_v7?
+        if elasticsearch_v7_0_compatible?
           properties_hash
         else
           { type => properties_hash }

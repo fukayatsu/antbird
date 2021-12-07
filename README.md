@@ -1,6 +1,6 @@
 # Antbird
 
-Nearly auto-generated Elasticsearch client
+Nearly auto-generated Elasticsearch/OpenSearch client
 
 [![Build Status](https://github.com/fukayatsu/antbird/workflows/build/badge.svg)](https://github.com/fukayatsu/antbird/actions)
 

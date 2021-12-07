@@ -1,10 +1,10 @@
 # Generated REST API methods file - DO NOT EDIT!
 # Date: <%= Time.now.strftime("%Y-%m-%d") %>
-# ES version: <%= version %>
+# <%= engine_name %> version: <%= version %>
 
 module Antbird
   module RestApi
-    module RestApiV<%= class_version %>
+    module RestApi<%= engine_name_prefix.delete_suffix('_').capitalize %>V<%= class_version %>
       def common_params
         @common_params ||= <%= api_spec['_common.json'] || {} %>
       end
