@@ -11,14 +11,14 @@ jobs:
         # 1. Run script/list_versions
         # 2. Check https://www.elastic.co/jp/support/eol
         elasticsearch:
-        - 7.14.0
+        - 7.15.2
+        - 7.14.2
         - 7.13.4
         - 7.12.1
         - 7.11.2
         - 7.10.2
         - 7.9.3
         - 7.8.1
-        - 7.7.1
         - 6.8.18
     steps:
     # @see https://github.com/elastic/elastic-github-actions/tree/master/elasticsearch
