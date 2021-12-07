@@ -8,6 +8,7 @@ module Antbird
       scope: {},
       url: "http://localhost:9200",
       version: nil,
+      distribution: nil,
       read_timeout: 5,
       open_timeout: 2,
       adapter: ::Faraday.default_adapter,
@@ -19,12 +20,13 @@ module Antbird
       @block        = block
       @url          = url
 
-      @scope     = scope.transform_keys(&:to_sym)
-      @version   = version
+      @scope        = scope.transform_keys(&:to_sym)
+      @version      = version
+      @distribution = distribution
 
       @api_specs = {}
     end
-    attr_reader :scope, :url, :version
+    attr_reader :scope, :url, :version, :distribution
     attr_reader :read_timeout, :open_timeout, :adapter
     attr_reader :api_specs, :last_request
 
@@ -33,6 +35,7 @@ module Antbird
         scope: new_scope,
         url: url,
         version: version,
+        distribution: distribution,
         read_timeout: read_timeout,
         open_timeout: open_timeout
       )
@@ -190,6 +193,27 @@ module Antbird
       end
     end
 
+    def elasticsearch?
+      !opensearch?
+    end
+
+    def opensearch?
+      fetch_version
+      distribution == 'opensearch'
+    end
+
+    def elasticsearch_v7_0_compatible?
+      return true if opensearch?
+
+      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.0.0')
+    end
+
+    def elasticsearch_v7_6_compatible?
+      return true if opensearch?
+
+      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.6.0')
+    end
+
     private
 
     # NOTE: stable sort
@@ -222,16 +246,25 @@ module Antbird
     end
 
     def fetch_version
-      connection.get('/').body.dig('version', 'number')
+      return if @version
+
+      version_hash = connection.get('/').body.dig('version')
+      @version ||= version_hash['number']
+      @distribution ||= version_hash['distribution']
     end
 
     def ensure_api_spec_loaded
       return if api_specs_loaded?
 
-      @version ||= fetch_version
+      fetch_version
       class_version = @version.split('.')[0, 2].join('_')
-      require "antbird/rest_api/rest_api_v#{class_version}"
-      extend Antbird::RestApi.const_get "RestApiV#{class_version}"
+      if opensearch?
+        require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
+        extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
+      else
+        require "antbird/rest_api/rest_api_v#{class_version}"
+        extend Antbird::RestApi.const_get "RestApiV#{class_version}"
+      end
 
       @api_specs_loaded = true
     end

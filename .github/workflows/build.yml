@@ -1,6 +1,9 @@
 name: build
 
 on: [push]
+env:
+  ENGINE_NAME: elasticsearch
+  REST_API_SPEC_REPO: elastic/elasticsearch
 
 jobs:
   build:
@@ -10,7 +13,7 @@ jobs:
       matrix:
         # 1. Run script/list_versions
         # 2. Check https://www.elastic.co/jp/support/eol
-        elasticsearch:
+        search_versions:
         - 7.15.2
         - 7.14.2
         - 7.13.4
@@ -31,13 +34,12 @@ jobs:
     - name: Runs Elasticsearch
       uses: elastic/elastic-github-actions/elasticsearch@master
       with:
-        stack-version: ${{matrix.elasticsearch}}
+        stack-version: ${{matrix.search_versions}}
     - uses: actions/checkout@v2
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: 2.7
         bundler-cache: true
-    - run: bundle install --jobs 4 --retry 3
     - name: Wait for elasticsearch
       run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
     - run: bundle exec rspec
