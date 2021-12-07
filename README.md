@@ -113,9 +113,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/fukayatsu/antbird. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
-### How to support newer version of Elasticsearch
+### How to support newer version of Elasticsearch/OpenSearch
 
-1. Add Elasticsearch version to `jobs.build.strategy.matrix.elasticsearch` on `.github/workflows/build.yml`
+1. Add Elasticsearch version to `jobs.build.strategy.matrix.search_versions` on `.github/workflows/build.yml` / `.github/workflows/build-os.yml`
     - Only one line for `x.y.*` version
 1. `script/generate_api_methods`
     - Set `GITHUB_TOKEN=***` env for GitHub API Limit
