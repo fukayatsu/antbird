@@ -25,8 +25,6 @@ module Antbird
       if version
         @version      = version
         @distribution = distribution
-      else
-        fetch_version_and_distribution
       end
 
       @api_specs = {}
@@ -203,6 +201,8 @@ module Antbird
     end
 
     def opensearch?
+      ensure_version_and_distribution
+
       distribution == 'opensearch'
     end
 
@@ -249,7 +249,9 @@ module Antbird
       end
     end
 
-    def fetch_version_and_distribution
+    def ensure_version_and_distribution
+      return if version
+
       version_hash = connection.get('/').body.dig('version')
       @version = version_hash['number']
       @distribution = version_hash['distribution']
@@ -261,6 +263,8 @@ module Antbird
 
     def ensure_api_spec_loaded
       return if api_specs_loaded?
+
+      ensure_version_and_distribution
 
       if opensearch?
         require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
