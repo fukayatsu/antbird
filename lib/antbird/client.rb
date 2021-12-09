@@ -21,8 +21,13 @@ module Antbird
       @url          = url
 
       @scope        = scope.transform_keys(&:to_sym)
-      @version      = version
-      @distribution = distribution
+
+      if version
+        @version      = version
+        @distribution = distribution
+      else
+        fetch_version_and_distribution
+      end
 
       @api_specs = {}
     end
@@ -198,7 +203,6 @@ module Antbird
     end
 
     def opensearch?
-      fetch_version
       distribution == 'opensearch'
     end
 
@@ -245,19 +249,19 @@ module Antbird
       end
     end
 
-    def fetch_version
-      return if @version
-
+    def fetch_version_and_distribution
       version_hash = connection.get('/').body.dig('version')
-      @version ||= version_hash['number']
-      @distribution ||= version_hash['distribution']
+      @version = version_hash['number']
+      @distribution = version_hash['distribution']
+    end
+
+    def class_version
+      version.split('.')[0, 2].join('_')
     end
 
     def ensure_api_spec_loaded
       return if api_specs_loaded?
 
-      fetch_version
-      class_version = @version.split('.')[0, 2].join('_')
       if opensearch?
         require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
         extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
