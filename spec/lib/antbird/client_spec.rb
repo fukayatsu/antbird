@@ -358,4 +358,36 @@ RSpec.describe Antbird::Client do
       end
     end
   end
+
+  describe '#version' do
+    subject(:instance) { described_class.new }
+
+    context 'status 200' do
+      before do
+        response = double(Faraday::Response)
+        allow(response).to receive(:status).and_return(200)
+        allow(response).to receive(:body).and_return({ 'version' => { 'number' => '1.1.0' }})
+        expect(instance.connection).to receive(:get).with('/').and_return(response)
+      end
+
+      it do
+        expect(instance.version).to eq('1.1.0')
+      end
+    end
+
+    context 'status 401' do
+      before do
+        response = double(Faraday::Response)
+        allow(response).to receive(:status).and_return(401)
+        allow(response).to receive(:body).and_return({ 'status' => 'error', 'message' => 'access denied' })
+        expect(instance.connection).to receive(:get).with('/').and_return(response)
+      end
+
+      it do
+        expect do
+          instance.version
+        end.to raise_error(Antbird::Client::RequestError)
+      end
+    end
+  end
 end

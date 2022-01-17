@@ -29,7 +29,7 @@ module Antbird
 
       @api_specs = {}
     end
-    attr_reader :scope, :url, :version, :distribution
+    attr_reader :scope, :url, :distribution
     attr_reader :read_timeout, :open_timeout, :adapter
     attr_reader :api_specs, :last_request
 
@@ -218,6 +218,13 @@ module Antbird
       elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.6.0')
     end
 
+    def version
+      return @version if @version
+
+      ensure_version_and_distribution
+      @version
+    end
+
     private
 
     # NOTE: stable sort
@@ -250,9 +257,14 @@ module Antbird
     end
 
     def ensure_version_and_distribution
-      return if version
+      return if @version
 
-      version_hash = connection.get('/').body.dig('version')
+      response = connection.get('/')
+      if response.status == 401
+        raise Antbird::Client::RequestError.new(response)
+      end
+
+      version_hash = response.body.dig('version')
       @version = version_hash['number']
       @distribution = version_hash['distribution']
     end
