@@ -1,6 +1,6 @@
 # Generated REST API methods file - DO NOT EDIT!
-# Date: 2021-08-12
-# ES version: 7.8.1
+# Date: 2022-07-28
+# elasticsearch version: 7.8.1
 
 module Antbird
   module RestApi
