@@ -14,32 +14,32 @@ jobs:
         # 1. Run script/list_versions
         # 2. Check https://www.elastic.co/jp/support/eol
         search_versions:
-        - 7.15.2
-        - 7.14.2
-        - 7.13.4
-        - 7.12.1
-        - 7.11.2
-        - 7.10.2
-        - 7.9.3
-        - 7.8.1
-        - 6.8.18
+          - 7.15.2
+          - 7.14.2
+          - 7.13.4
+          - 7.12.1
+          - 7.11.2
+          - 7.10.2
+          - 7.9.3
+          - 7.8.1
+          - 6.8.18
     steps:
-    # @see https://github.com/elastic/elastic-github-actions/tree/master/elasticsearch
-    - name: Configure sysctl limits for Elasticsearch
-      run: |
-        sudo swapoff -a
-        sudo sysctl -w vm.swappiness=1
-        sudo sysctl -w fs.file-max=262144
-        sudo sysctl -w vm.max_map_count=262144
-    - name: Runs Elasticsearch
-      uses: elastic/elastic-github-actions/elasticsearch@master
-      with:
-        stack-version: ${{matrix.search_versions}}
-    - uses: actions/checkout@v2
-    - uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 2.7
-        bundler-cache: true
-    - name: Wait for elasticsearch
-      run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
-    - run: bundle exec rspec
+      # @see https://github.com/elastic/elastic-github-actions/tree/master/elasticsearch
+      - name: Configure sysctl limits for Elasticsearch
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: ${{matrix.search_versions}}
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Wait for elasticsearch
+        run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
+      - run: bundle exec rspec

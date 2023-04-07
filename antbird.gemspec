@@ -20,14 +20,13 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  spec.required_ruby_version = ">= 2.7.0"
 
-  spec.add_dependency "faraday", "> 0.8", "< 2.0"
-  spec.add_dependency 'faraday_middleware', "> 0.12", "< 2.0"
+  spec.add_dependency "faraday", ">= 2.0.1"
 
-  spec.add_development_dependency "net-http-persistent"
+  spec.add_development_dependency "faraday-net_http_persistent"
   spec.add_development_dependency "bundler", "> 1.16", "< 3.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency "octokit", "~> 4.0"
-  spec.add_development_dependency "pry-byebug", "~> 3.0"
+  spec.add_development_dependency "octokit"
 end

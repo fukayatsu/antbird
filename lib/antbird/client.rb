@@ -1,5 +1,4 @@
 require 'faraday'
-require 'faraday_middleware'
 require 'antbird/client/errors'
 
 module Antbird

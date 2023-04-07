@@ -1,3 +1,5 @@
+require 'faraday/net_http_persistent'
+
 RSpec.describe Antbird::Client do
   def trap_exception
     yield
