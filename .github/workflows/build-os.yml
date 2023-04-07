@@ -13,15 +13,15 @@ jobs:
       matrix:
         # https://github.com/opensearch-project/OpenSearch/releases
         search_versions:
-        - 2.4.1
-        - 2.3.0
-        - 2.2.1
-        - 2.1.0
-        - 2.0.1
-        - 1.3.6
-        - 1.2.4
-        - 1.1.0
-        - 1.0.0
+          - 2.4.1
+          - 2.3.0
+          - 2.2.1
+          - 2.1.0
+          - 2.0.1
+          - 1.3.6
+          - 1.2.4
+          - 1.1.0
+          - 1.0.0
     services:
       opensearch:
         image: opensearchproject/opensearch:${{matrix.search_versions}}
@@ -31,17 +31,17 @@ jobs:
           discovery.type: single-node
           plugins.security.disabled: true
     steps:
-    - name: Configure sysctl limits
-      run: |
-        sudo swapoff -a
-        sudo sysctl -w vm.swappiness=1
-        sudo sysctl -w fs.file-max=262144
-        sudo sysctl -w vm.max_map_count=262144
-    - uses: actions/checkout@v2
-    - uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: 2.7
-        bundler-cache: true
-    - name: Wait for OpenSearch
-      run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
-    - run: bundle exec rspec
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Wait for OpenSearch
+        run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
+      - run: bundle exec rspec

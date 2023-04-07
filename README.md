@@ -43,7 +43,7 @@ client = Antbird::Client.new(
 
 # OR
 
-require 'faraday_middleware'
+require 'faraday/net_http_persistent'
 require 'faraday_middleware/aws_sigv4'
 client = Antbird::Client.new(
   url: ENV['AMAZON_ELASTICSEARCH_SERVICE_URL'],
@@ -116,9 +116,9 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/fukaya
 ### How to support newer version of Elasticsearch/OpenSearch
 
 1. Add Elasticsearch version to `jobs.build.strategy.matrix.search_versions` on `.github/workflows/build.yml` / `.github/workflows/build-os.yml`
-    - Only one line for `x.y.*` version
+   - Only one line for `x.y.*` version
 1. `script/generate_api_methods`
-    - Set `GITHUB_TOKEN=***` env for GitHub API Limit
+   - Set `GITHUB_TOKEN=***` env for GitHub API Limit
 
 ## License
 
