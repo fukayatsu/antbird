@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "faraday", ">= 2.0.1"
 
+  spec.add_development_dependency "faraday-retry"
   spec.add_development_dependency "faraday-net_http_persistent"
   spec.add_development_dependency "bundler", "> 1.16", "< 3.0"
   spec.add_development_dependency "rake", "~> 13.0"
