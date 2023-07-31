@@ -1,5 +1,4 @@
 # Generated REST API methods file - DO NOT EDIT!
-# Date: 2022-07-28
 # opensearch version: 1.2.4
 
 module Antbird
