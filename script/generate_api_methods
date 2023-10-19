@@ -29,7 +29,7 @@ class ApiMethodsGenerator
 
   def fetch_api_spec(engine_name, ref)
     cache_file = "tmp/api_spec_#{engine_name_prefix}#{ref}.yml"
-    return YAML.load_file(cache_file) if File.exists?(cache_file)
+    return YAML.load_file(cache_file) if File.exist?(cache_file)
 
     client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
     files = client.contents(rest_api_spec_repo, path: 'rest-api-spec/src/main/resources/rest-api-spec/api', query: {ref: ref})
