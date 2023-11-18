@@ -259,7 +259,7 @@ module Antbird
       return if @version
 
       response = connection.get('/')
-      if response.status == 401
+      unless response.status == 200
         raise Antbird::Client::RequestError.new(response)
       end
 

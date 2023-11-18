@@ -391,5 +391,20 @@ RSpec.describe Antbird::Client do
         end.to raise_error(Antbird::Client::RequestError)
       end
     end
+
+    context 'status 502' do
+      before do
+        response = double(Faraday::Response)
+        allow(response).to receive(:status).and_return(502)
+        allow(response).to receive(:body).and_return({ 'status' => 'error', 'message' => 'access denied' })
+        expect(instance.connection).to receive(:get).with('/').and_return(response)
+      end
+
+      it do
+        expect do
+          instance.version
+        end.to raise_error(Antbird::Client::RequestError)
+      end
+    end
   end
 end
