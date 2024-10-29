@@ -1,7 +1,5 @@
 #!/usr/bin/env bundle exec ruby
 
-require 'octokit'
-require 'base64'
 require 'json'
 require 'yaml'
 require 'erb'
@@ -31,13 +29,16 @@ class ApiMethodsGenerator
     cache_file = "tmp/api_spec_#{engine_name_prefix}#{ref}.yml"
     return YAML.load_file(cache_file) if File.exist?(cache_file)
 
-    client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
-    files = client.contents(rest_api_spec_repo, path: 'rest-api-spec/src/main/resources/rest-api-spec/api', query: {ref: ref})
+    `rm -rf tmp/repo`
+    `git clone --filter=blob:none --no-checkout -b #{ref} git@github.com:#{rest_api_spec_repo}.git tmp/repo`
+    `cd tmp/repo && git sparse-checkout set rest-api-spec/src/main/resources/rest-api-spec/api && git checkout`
+
     api_spec = {}
+    files = Dir.glob('tmp/repo/rest-api-spec/src/main/resources/rest-api-spec/api/*.json')
     files.each do |f|
-      puts f.url
-      file = client.content(rest_api_spec_repo, path: f.path, query: { ref: ref })
-      api_spec[File.basename(file.name)] = JSON.parse(Base64.decode64(file.content))
+      puts "#{f} (#{ref})"
+      content = File.read(f)
+      api_spec[File.basename(f)] = JSON.parse(content)
     end
 
     File.open(cache_file, 'w') { |f| f.write(api_spec.to_yaml) }
