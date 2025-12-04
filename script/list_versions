@@ -5,21 +5,21 @@ require 'yaml'
 
 class VersionsGenerator
   def run
-    workflow_yaml = YAML.load_file('.github/workflows/build.yml')
+    workflow_yaml = YAML.load_file('.github/workflows/build-os.yml')
     min_version = workflow_yaml
-      .dig('jobs', 'build', 'strategy', 'matrix', 'elasticsearch')
+      .dig('jobs', 'build', 'strategy', 'matrix', 'search_versions')
       .map { |v| Gem::Version.new(v) }
       .min
 
     client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
 
     versions_to_support = {}
-    tags = client.tags('elastic/elasticsearch', per_page: 100)
+    tags = client.tags('opensearch-project/OpenSearch', per_page: 100)
     tags.each do |tag|
       tag_name = tag[:name]
-      next unless tag_name.match?(/v\d+\.\d+\.\d+/)
+      next unless tag_name.match?(/\d+\.\d+\.\d+/)
 
-      tag_version = Gem::Version.new(tag_name.delete_prefix('v'))
+      tag_version = Gem::Version.new(tag_name)
       next if tag_version < min_version
 
       major_minor = tag_version.to_s.split('.')[0..1].join('.')
@@ -29,7 +29,7 @@ class VersionsGenerator
     end
 
     versions_to_support.values.each do |version|
-      puts "        - #{version.to_s}"
+      puts "          - #{version.to_s}"
     end
   end
 end

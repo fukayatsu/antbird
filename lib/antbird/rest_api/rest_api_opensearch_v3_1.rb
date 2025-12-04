@@ -1,9 +1,9 @@
 # Generated REST API methods file - DO NOT EDIT!
-# opensearch version: 2.19.4
+# opensearch version: 3.1.0
 
 module Antbird
   module RestApi
-    module RestApiOpensearchV2_19
+    module RestApiOpensearchV3_1
       def common_params
         @common_params ||= {"documentation" => {"description" => "Parameters that are accepted by all API endpoints.", "url" => "https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html"}, "params" => {"pretty" => {"type" => "boolean", "description" => "Pretty format the returned JSON response.", "default" => false}, "human" => {"type" => "boolean", "description" => "Return human readable values for statistics.", "default" => true}, "error_trace" => {"type" => "boolean", "description" => "Include the stack trace of returned errors.", "default" => false}, "source" => {"type" => "string", "description" => "The URL-encoded request definition. Useful for libraries that do not accept a request body for non-POST requests."}, "filter_path" => {"type" => "list", "description" => "A comma-separated list of filters used to reduce the response."}}}
       end
@@ -228,7 +228,7 @@ module Antbird
       # {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Delete weighted shard routing weights"}
       def cluster_delete_weighted_routing(params = {})
         api_name = 'cluster.delete_weighted_routing'
-        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Delete weighted shard routing weights"}, "stability" => "experimental", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/weights", "methods" => ["DELETE"]}]}}
+        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Delete weighted shard routing weights"}, "stability" => "stable", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/weights", "methods" => ["DELETE"]}]}}
         request(api_name, api_spec, params)
       end
 
@@ -269,7 +269,7 @@ module Antbird
       # {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness/", "description" => "Fetches weighted shard routing weights"}
       def cluster_get_weighted_routing(params = {})
         api_name = 'cluster.get_weighted_routing'
-        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness/", "description" => "Fetches weighted shard routing weights"}, "stability" => "experimental", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/{attribute}/weights", "methods" => ["GET"], "parts" => {"attribute" => {"type" => "string", "description" => "Awareness attribute name"}}}]}}
+        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness/", "description" => "Fetches weighted shard routing weights"}, "stability" => "stable", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/{attribute}/weights", "methods" => ["GET"], "parts" => {"attribute" => {"type" => "string", "description" => "Awareness attribute name"}}}]}}
         request(api_name, api_spec, params)
       end
 
@@ -325,7 +325,7 @@ module Antbird
       # {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Updates weighted shard routing weights"}
       def cluster_put_weighted_routing(params = {})
         api_name = 'cluster.put_weighted_routing'
-        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Updates weighted shard routing weights"}, "stability" => "experimental", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/{attribute}/weights", "methods" => ["PUT"], "parts" => {"attribute" => {"type" => "string", "description" => "Awareness attribute name"}}}]}}
+        api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-awareness", "description" => "Updates weighted shard routing weights"}, "stability" => "stable", "url" => {"paths" => [{"path" => "/_cluster/routing/awareness/{attribute}/weights", "methods" => ["PUT"], "parts" => {"attribute" => {"type" => "string", "description" => "Awareness attribute name"}}}]}}
         request(api_name, api_spec, params)
       end
 
@@ -1325,6 +1325,14 @@ module Antbird
       def update_by_query_rethrottle(params = {})
         api_name = 'update_by_query_rethrottle'
         api_spec = @api_specs[api_name] ||= {"documentation" => {"url" => "https://opensearch.org/docs/latest/api-reference/document-apis/update-by-query/", "description" => "Changes the number of requests per second for a particular Update By Query operation."}, "stability" => "stable", "url" => {"paths" => [{"path" => "/_update_by_query/{task_id}/_rethrottle", "methods" => ["POST"], "parts" => {"task_id" => {"type" => "string", "description" => "The task id to rethrottle"}}}]}, "params" => {"requests_per_second" => {"type" => "number", "required" => true, "description" => "The throttle to set on this request in floating sub-requests per second. -1 means set no throttle."}}}
+        request(api_name, api_spec, params)
+      end
+
+      # wlm_stats_list 
+      # {"url" => "https://docs.opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/workload-management/wlm-feature-overview/", "description" => "This API endpoint returns a list of WLM stats with pagination support."}
+      def wlm_stats_list(params = {})
+        api_name = 'wlm_stats_list'
+        api_spec = @api_specs[api_name] ||= {"stability" => "experimental", "documentation" => {"url" => "https://docs.opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/workload-management/wlm-feature-overview/", "description" => "This API endpoint returns a list of WLM stats with pagination support."}, "url" => {"paths" => [{"path" => "/_list/wlm_stats", "methods" => ["GET"]}]}, "params" => {"size" => {"type" => "int", "required" => false, "description" => "Number of results per page"}, "next_token" => {"type" => "string", "required" => false, "description" => "Pagination token for next page"}, "sort" => {"type" => "string", "required" => false, "description" => "Sort field"}, "order" => {"type" => "string", "required" => false, "description" => "Sort order (asc or desc)"}, "v" => {"type" => "boolean", "required" => false, "description" => "Whether to include headers"}}}
         request(api_name, api_spec, params)
       end
     end
