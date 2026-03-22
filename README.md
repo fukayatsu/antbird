@@ -39,6 +39,27 @@ client = Antbird::Client.new(
     index: 'test-index',
   }
 )
+
+# OR with AWS OpenSearch Service
+
+require 'faraday/net_http_persistent'
+require 'faraday_middleware/aws_sigv4'
+client = Antbird::Client.new(
+  url: ENV['AMAZON_OPENSEARCH_SERVICE_URL'],
+  scope: {
+    index: 'test-index',
+  },
+  adapter: :net_http_persistent
+) do |f|
+  # https://github.com/winebarrel/faraday_middleware-aws-sigv4
+  f.request(
+    :aws_sigv4,
+    service: 'es',
+    region: 'ap-northeast-1',
+    access_key_id: ENV['AWS_ACCESS_KEY_ID'],
+    secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
+  )
+end
 ```
 
 ### Call APIs
