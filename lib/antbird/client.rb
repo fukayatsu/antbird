@@ -7,7 +7,6 @@ module Antbird
       scope: {},
       url: "http://localhost:9200",
       version: nil,
-      distribution: nil,
       read_timeout: 5,
       open_timeout: 2,
       adapter: ::Faraday.default_adapter,
@@ -21,14 +20,11 @@ module Antbird
 
       @scope        = scope.transform_keys(&:to_sym)
 
-      if version
-        @version      = version
-        @distribution = distribution
-      end
+      @version = version
 
       @api_specs = {}
     end
-    attr_reader :scope, :url, :distribution
+    attr_reader :scope, :url
     attr_reader :read_timeout, :open_timeout, :adapter
     attr_reader :api_specs, :last_request
 
@@ -37,7 +33,6 @@ module Antbird
         scope: new_scope,
         url: url,
         version: version,
-        distribution: distribution,
         read_timeout: read_timeout,
         open_timeout: open_timeout
       )
@@ -195,16 +190,10 @@ module Antbird
       end
     end
 
-    def opensearch?
-      ensure_version_and_distribution
-
-      distribution == 'opensearch'
-    end
-
     def version
       return @version if @version
 
-      ensure_version_and_distribution
+      ensure_version
       @version
     end
 
@@ -239,7 +228,7 @@ module Antbird
       end
     end
 
-    def ensure_version_and_distribution
+    def ensure_version
       return if @version
 
       response = connection.get('/')
@@ -249,7 +238,6 @@ module Antbird
 
       version_hash = response.body.dig('version')
       @version = version_hash['number']
-      @distribution = version_hash['distribution']
     end
 
     def class_version
@@ -259,7 +247,7 @@ module Antbird
     def ensure_api_spec_loaded
       return if api_specs_loaded?
 
-      ensure_version_and_distribution
+      ensure_version
 
       require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
       extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
