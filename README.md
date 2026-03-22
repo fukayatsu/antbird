@@ -1,6 +1,6 @@
 # Antbird
 
-Nearly auto-generated OpenSearch client
+Nearly auto-generated OpenSearch client (supports OpenSearch 3.x)
 
 [![Build Status](https://github.com/fukayatsu/antbird/workflows/build-os/badge.svg)](https://github.com/fukayatsu/antbird/actions)
 
