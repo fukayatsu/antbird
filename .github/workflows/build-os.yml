@@ -27,7 +27,8 @@ jobs:
         env:
           discovery.type: single-node
           plugins.security.disabled: true
-          OPENSEARCH_INITIAL_ADMIN_PASSWORD: StrongPassword123
+          # a minimum 8 character password and must contain at least one uppercase letter, one lowercase letter, one digit, and one special character that is strong. Password strength can be tested here: https://lowe.github.io/tryzxcvbn
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: "antbird@123Antbird"
     steps:
       - name: Configure sysctl limits
         run: |
