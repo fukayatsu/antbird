@@ -195,26 +195,10 @@ module Antbird
       end
     end
 
-    def elasticsearch?
-      !opensearch?
-    end
-
     def opensearch?
       ensure_version_and_distribution
 
       distribution == 'opensearch'
-    end
-
-    def elasticsearch_v7_0_compatible?
-      return true if opensearch?
-
-      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.0.0')
-    end
-
-    def elasticsearch_v7_6_compatible?
-      return true if opensearch?
-
-      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.6.0')
     end
 
     def version
@@ -277,13 +261,8 @@ module Antbird
 
       ensure_version_and_distribution
 
-      if opensearch?
-        require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
-        extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
-      else
-        require "antbird/rest_api/rest_api_v#{class_version}"
-        extend Antbird::RestApi.const_get "RestApiV#{class_version}"
-      end
+      require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
+      extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
 
       @api_specs_loaded = true
     end

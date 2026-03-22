@@ -7,14 +7,6 @@ RSpec.describe Antbird::Client do
     e
   end
 
-  def  elasticsearch_v7_0_compatible?
-    described_class.new. elasticsearch_v7_0_compatible?
-  end
-
-  def elasticsearch_v7_6_compatible?
-    described_class.new.elasticsearch_v7_6_compatible?
-  end
-
   def expect_count(response, expected)
     hits_total = response['hits']['total']
     count = hits_total.is_a?(Hash) ? hits_total['value'] : hits_total
@@ -78,16 +70,8 @@ RSpec.describe Antbird::Client do
     it 'raise ServerError' do
       error = trap_exception { client.search(body: 'aaa') }
 
-      if elasticsearch_v7_6_compatible?
-        expect(error).to be_a(Antbird::Client::RequestError)
-        expect(error.status).to eq 400
-        expect(error.message).to include "Unrecognized token 'aaa'"
-      else
-        expect(error).to be_a(Antbird::Client::ServerError)
-        expect(error.status).to eq 500
-        expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
-      end
-
+      expect(error).to be_a(Antbird::Client::RequestError)
+      expect(error.status).to eq 400
       expect(error.response).to be_a Faraday::Response
       expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
     end
@@ -104,26 +88,12 @@ RSpec.describe Antbird::Client do
 
   describe 'api methods' do
     let(:index)  { 'test_index' }
-    let(:type)   { 'test_type' }
-    let(:scope) do
-      if elasticsearch_v7_0_compatible?
-        { index: index }
-      else
-        { index: index, type: type }
-      end
-    end
+    let(:scope) { { index: index } }
     let(:client) { described_class.new(scope: scope) }
 
     before { trap_exception { client.indices_delete } }
 
     describe '#method_missing' do
-      let(:scope) do
-        if elasticsearch_v7_0_compatible?
-          { index: index }
-        else
-          { index: index, type: type }
-        end
-      end
       let(:another_client) { described_class.new(scope: scope) }
 
       it do
@@ -136,7 +106,7 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#scoped' do
-      let(:client) { described_class.new.scoped(index: index, type: type) }
+      let(:client) { described_class.new.scoped(index: index) }
       it do
         expect(client.indices_exists?). to eq false
         client.indices_create
@@ -154,19 +124,12 @@ RSpec.describe Antbird::Client do
 
     describe '#index and #search' do
       let(:settings) { { number_of_shards: 1 } }
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -181,12 +144,7 @@ RSpec.describe Antbird::Client do
 
         expect(client.indices_exists?). to eq true
         expect(client.indices_get_settings.dig('test_index', 'settings', 'index', 'number_of_shards')).to eq('1')
-
-        if elasticsearch_v7_0_compatible?
-          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
-        else
-          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
-        end
+        expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
 
         match_all_query = { query: { match_all: {} } }
         match_foo_query = { query: { match: {field1: 'foo' } } }
@@ -216,19 +174,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#delete_by_query' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -258,20 +209,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#update_by_query' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -306,20 +249,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#bulk' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
