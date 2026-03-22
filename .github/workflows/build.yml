@@ -41,5 +41,5 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
       - name: Wait for elasticsearch
-        run: timeout 60 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
+        run: timeout 120 bash -c "until curl --silent --output /dev/null localhost:9200/_cat/health?h=st; do printf '.'; sleep 5; done; printf '\n'"
       - run: bundle exec rspec
