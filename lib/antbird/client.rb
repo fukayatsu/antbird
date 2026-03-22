@@ -280,10 +280,17 @@ module Antbird
       version.split('.')[0, 2].join('_')
     end
 
+    SUPPORTED_MAJOR_VERSION = 3
+
     def ensure_api_spec_loaded
       return if api_specs_loaded?
 
       ensure_version
+
+      major = version.split('.').first.to_i
+      unless major == SUPPORTED_MAJOR_VERSION
+        raise "Unsupported OpenSearch version: #{version}. Antbird currently supports OpenSearch #{SUPPORTED_MAJOR_VERSION}.x only."
+      end
 
       require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
       extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
