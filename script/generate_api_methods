@@ -5,24 +5,29 @@ require 'yaml'
 require 'erb'
 require 'shellwords'
 
+ENGINE_NAME = 'opensearch'
+REST_API_SPEC_REPO = 'opensearch-project/OpenSearch'
+
 class ApiMethodsGenerator
-  def initialize(engine_name, rest_api_spec_repo, version)
-    @engine_name = engine_name
-    @rest_api_spec_repo = rest_api_spec_repo
+  def initialize(version)
     @version = version
 
     sliced = @version.split(".").slice(0,2)
     @short_version = sliced.join(".")
     @class_version = sliced.join("_")
   end
-  attr_reader :engine_name, :rest_api_spec_repo, :version, :short_version, :class_version
+  attr_reader :version, :short_version, :class_version
+
+  def engine_name
+    ENGINE_NAME
+  end
 
   def engine_name_prefix
     "#{engine_name}_"
   end
 
   def run
-    api_spec = fetch_api_spec(engine_name, "#{version}")
+    api_spec = fetch_api_spec("#{version}")
     File.open("lib/antbird/rest_api/rest_api_#{engine_name_prefix}v#{class_version}.rb", "w") do |f|
       f.puts ERB.new(File.read('script/rest_api_template.erb'), trim_mode: "<>").result(binding)
     end
@@ -30,12 +35,12 @@ class ApiMethodsGenerator
 
   private
 
-  def fetch_api_spec(engine_name, ref)
+  def fetch_api_spec(ref)
     cache_file = "tmp/api_spec_#{engine_name_prefix}#{ref}.yml"
     return YAML.load_file(cache_file) if File.exist?(cache_file)
 
     `rm -rf tmp/repo`
-    `git clone --filter=blob:none --no-checkout -b #{Shellwords.shellescape(ref)} git@github.com:#{Shellwords.shellescape(rest_api_spec_repo)}.git tmp/repo`
+    `git clone --filter=blob:none --no-checkout -b #{Shellwords.shellescape(ref)} git@github.com:#{Shellwords.shellescape(REST_API_SPEC_REPO)}.git tmp/repo`
     `cd tmp/repo && git sparse-checkout set rest-api-spec/src/main/resources/rest-api-spec/api && git checkout`
 
     api_spec = {}
@@ -52,10 +57,8 @@ class ApiMethodsGenerator
 end
 
 workflow_yaml = YAML.load_file('.github/workflows/build-os.yml')
-engine_name = workflow_yaml.dig('env', 'ENGINE_NAME')
-rest_api_spec_repo = workflow_yaml.dig('env', 'REST_API_SPEC_REPO')
 versions = workflow_yaml.dig('jobs', 'build', 'strategy', 'matrix', 'search_versions').uniq
 
 versions.each do |version|
-  ApiMethodsGenerator.new(engine_name, rest_api_spec_repo, version).run
+  ApiMethodsGenerator.new(version).run
 end
