@@ -10,8 +10,6 @@
 # rspec failure tracking
 .rspec_status
 
-Gemfile.lock
-
 .envrc
 
 .claude/settings.local.json
