@@ -43,11 +43,11 @@ module Antbird
       )
     end
 
-    def request(api_name, api_spec, params)
+    def request(api_name, api_spec, params, path_params = [:index, :type, :id])
       validate_params(api_spec, params)
 
       body   = extract_body(params)
-      scopes = extract_scopes(params)
+      scopes = extract_scopes(params, path_params)
       forced_method = extract_method(params)
 
       # Greedy match
@@ -148,9 +148,9 @@ module Antbird
       params.delete(:method)&.to_sym
     end
 
-    def extract_scopes(params)
+    def extract_scopes(params, path_params = [:index, :type, :id])
       scopes = {}
-      [:index, :type, :id].each do |s|
+      path_params.each do |s|
         scope = params.delete(s)
         next unless scope
         scopes[s] = scope
