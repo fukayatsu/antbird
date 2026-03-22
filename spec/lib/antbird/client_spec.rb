@@ -7,14 +7,6 @@ RSpec.describe Antbird::Client do
     e
   end
 
-  def  elasticsearch_v7_0_compatible?
-    described_class.new. elasticsearch_v7_0_compatible?
-  end
-
-  def elasticsearch_v7_6_compatible?
-    described_class.new.elasticsearch_v7_6_compatible?
-  end
-
   def expect_count(response, expected)
     hits_total = response['hits']['total']
     count = hits_total.is_a?(Hash) ? hits_total['value'] : hits_total
@@ -75,24 +67,16 @@ RSpec.describe Antbird::Client do
 
   describe 'handle_errors' do
     let(:client) { described_class.new }
-    it 'raise ServerError' do
+    it 'raise RequestError for invalid body string' do
       error = trap_exception { client.search(body: 'aaa') }
 
-      if elasticsearch_v7_6_compatible?
-        expect(error).to be_a(Antbird::Client::RequestError)
-        expect(error.status).to eq 400
-        expect(error.message).to include "Unrecognized token 'aaa'"
-      else
-        expect(error).to be_a(Antbird::Client::ServerError)
-        expect(error.status).to eq 500
-        expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
-      end
-
+      expect(error).to be_a(Antbird::Client::RequestError)
+      expect(error.status).to eq 400
       expect(error.response).to be_a Faraday::Response
       expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
     end
 
-    it 'raise ServerError' do
+    it 'raise RequestError for unknown query key' do
       error = trap_exception { client.search(body: { foo: {} }) }
 
       expect(error).to be_a(Antbird::Client::RequestError)
@@ -104,26 +88,12 @@ RSpec.describe Antbird::Client do
 
   describe 'api methods' do
     let(:index)  { 'test_index' }
-    let(:type)   { 'test_type' }
-    let(:scope) do
-      if elasticsearch_v7_0_compatible?
-        { index: index }
-      else
-        { index: index, type: type }
-      end
-    end
+    let(:scope) { { index: index } }
     let(:client) { described_class.new(scope: scope) }
 
     before { trap_exception { client.indices_delete } }
 
     describe '#method_missing' do
-      let(:scope) do
-        if elasticsearch_v7_0_compatible?
-          { index: index }
-        else
-          { index: index, type: type }
-        end
-      end
       let(:another_client) { described_class.new(scope: scope) }
 
       it do
@@ -136,7 +106,7 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#scoped' do
-      let(:client) { described_class.new.scoped(index: index, type: type) }
+      let(:client) { described_class.new.scoped(index: index) }
       it do
         expect(client.indices_exists?). to eq false
         client.indices_create
@@ -154,19 +124,12 @@ RSpec.describe Antbird::Client do
 
     describe '#index and #search' do
       let(:settings) { { number_of_shards: 1 } }
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -181,12 +144,7 @@ RSpec.describe Antbird::Client do
 
         expect(client.indices_exists?). to eq true
         expect(client.indices_get_settings.dig('test_index', 'settings', 'index', 'number_of_shards')).to eq('1')
-
-        if elasticsearch_v7_0_compatible?
-          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
-        else
-          expect(client.indices_get_mapping.dig('test_index', 'mappings', 'test_type', 'properties', 'field1', 'type')).to eq('text')
-        end
+        expect(client.indices_get_mapping.dig('test_index', 'mappings', 'properties', 'field1', 'type')).to eq('text')
 
         match_all_query = { query: { match_all: {} } }
         match_foo_query = { query: { match: {field1: 'foo' } } }
@@ -216,19 +174,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#delete_by_query' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -258,20 +209,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#update_by_query' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -306,20 +249,12 @@ RSpec.describe Antbird::Client do
     end
 
     describe '#bulk' do
-      let(:properties_hash) do
+      let(:mappings) do
         {
           properties: {
             field1: { type: :text }
           }
         }
-      end
-
-      let(:mappings) do
-        if elasticsearch_v7_0_compatible?
-          properties_hash
-        else
-          { type => properties_hash }
-        end
       end
 
       it do
@@ -361,6 +296,80 @@ RSpec.describe Antbird::Client do
     end
   end
 
+  describe '#validate_params' do
+    let(:client) { described_class.new }
+    let(:api_spec) do
+      {
+        'url' => { 'paths' => [{ 'path' => '/_search', 'methods' => ['GET', 'POST'] }] },
+        'body' => { 'required' => true },
+        'params' => {
+          'timeout' => { 'type' => 'string' },
+          'size' => { 'type' => 'number' },
+          'explain' => { 'type' => 'boolean' },
+          'q' => { 'type' => 'string', 'required' => true }
+        }
+      }
+    end
+    let(:path_params) { [:index] }
+
+    it 'raises ArgumentError when body is required but missing' do
+      expect {
+        client.send(:validate_params, api_spec, { q: 'test' }, path_params)
+      }.to raise_error(ArgumentError, 'Body is missing')
+    end
+
+    it 'raises ArgumentError for unknown parameters' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', unknown_param: 'value' }, path_params)
+      }.to raise_error(ArgumentError, /Unknown parameters: unknown_param/)
+    end
+
+    it 'raises ArgumentError when required parameter is missing' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, timeout: '5s' }, path_params)
+      }.to raise_error(ArgumentError, /Required parameter missing: q/)
+    end
+
+    it 'raises ArgumentError for invalid boolean parameter' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', explain: 'yes' }, path_params)
+      }.to raise_error(ArgumentError, /Parameter 'explain' must be a boolean/)
+    end
+
+    it 'raises ArgumentError for invalid number parameter' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', size: 'abc' }, path_params)
+      }.to raise_error(ArgumentError, /Parameter 'size' must be a number/)
+    end
+
+    it 'accepts valid parameters' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', timeout: '5s', size: 10, explain: true }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts path params' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', index: 'my-index' }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts special params (method, read_timeout)' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, read_timeout: 10 }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'skips param name/type validation when api_spec has no params' do
+      spec_without_params = {
+        'url' => { 'paths' => [{ 'path' => '/_refresh', 'methods' => ['POST'] }] }
+      }
+      expect {
+        client.send(:validate_params, spec_without_params, { anything: 'goes' }, [])
+      }.not_to raise_error
+    end
+  end
+
   describe '#version' do
     subject(:instance) { described_class.new }
 
@@ -368,12 +377,12 @@ RSpec.describe Antbird::Client do
       before do
         response = double(Faraday::Response)
         allow(response).to receive(:status).and_return(200)
-        allow(response).to receive(:body).and_return({ 'version' => { 'number' => '1.1.0' }})
+        allow(response).to receive(:body).and_return({ 'version' => { 'number' => '3.0.0' }})
         expect(instance.connection).to receive(:get).with('/').and_return(response)
       end
 
       it do
-        expect(instance.version).to eq('1.1.0')
+        expect(instance.version).to eq('3.0.0')
       end
     end
 

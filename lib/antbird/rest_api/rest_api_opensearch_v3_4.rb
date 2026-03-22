@@ -1,9 +1,9 @@
 # Generated REST API methods file - DO NOT EDIT!
-# opensearch version: 3.2.0
+# opensearch version: 3.4.0
 
 module Antbird
   module RestApi
-    module RestApiOpensearchV3_2
+    module RestApiOpensearchV3_4
       def common_params
         @common_params ||= {"documentation" => {"description" => "Parameters that are accepted by all API endpoints.", "url" => "https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html"}, "params" => {"pretty" => {"type" => "boolean", "description" => "Pretty format the returned JSON response.", "default" => false}, "human" => {"type" => "boolean", "description" => "Return human readable values for statistics.", "default" => true}, "error_trace" => {"type" => "boolean", "description" => "Include the stack trace of returned errors.", "default" => false}, "source" => {"type" => "string", "description" => "The URL-encoded request definition. Useful for libraries that do not accept a request body for non-POST requests."}, "filter_path" => {"type" => "list", "description" => "A comma-separated list of filters used to reduce the response."}}}
       end

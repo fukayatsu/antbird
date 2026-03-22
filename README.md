@@ -1,8 +1,8 @@
 # Antbird
 
-Nearly auto-generated Elasticsearch/OpenSearch client
+Nearly auto-generated OpenSearch client (supports OpenSearch 3.x)
 
-[![Build Status](https://github.com/fukayatsu/antbird/workflows/build/badge.svg)](https://github.com/fukayatsu/antbird/actions)
+[![Build Status](https://github.com/fukayatsu/antbird/workflows/build-os/badge.svg)](https://github.com/fukayatsu/antbird/actions)
 
 ## Installation
 
@@ -29,7 +29,7 @@ client = Antbird::Client.new
 
 # OR
 
-client = Antbird::Client.new.scoped(index: 'test-index', type: 'test-type')
+client = Antbird::Client.new.scoped(index: 'test-index')
 
 # OR
 
@@ -37,19 +37,17 @@ client = Antbird::Client.new(
   url: 'http://localhost:9200',
   scope: {
     index: 'test-index',
-    type: 'test-type'
   }
 )
 
-# OR
+# OR with AWS OpenSearch Service
 
 require 'faraday/net_http_persistent'
 require 'faraday_middleware/aws_sigv4'
 client = Antbird::Client.new(
-  url: ENV['AMAZON_ELASTICSEARCH_SERVICE_URL'],
+  url: ENV['AMAZON_OPENSEARCH_SERVICE_URL'],
   scope: {
     index: 'test-index',
-    type: 'test-type'
   },
   adapter: :net_http_persistent
 ) do |f|
@@ -68,7 +66,7 @@ end
 
 ```ruby
 client = Antbird::Client.new(
-  scope: { index: 'test-index', type: 'test-type' }
+  scope: { index: 'test-index' }
 )
 
 client.indices_exists? # => false
@@ -76,10 +74,8 @@ client.indices_create(
   body: {
     settings: { number_of_shards: 1 },
     mappings: {
-      'test-type': {
-        properties: {
-          field1: { type: :text }
-        }
+      properties: {
+        field1: { type: :text }
       }
     }
   }
@@ -113,9 +109,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/fukayatsu/antbird. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
-### How to support newer version of Elasticsearch/OpenSearch
+### How to support newer version of OpenSearch
 
-1. Add Elasticsearch version to `jobs.build.strategy.matrix.search_versions` on `.github/workflows/build.yml` / `.github/workflows/build-os.yml`
+1. Add OpenSearch version to `jobs.build.strategy.matrix.search_versions` on `.github/workflows/build-os.yml`
    - Only one line for `x.y.*` version
 1. `script/generate_api_methods`
    - Set `GITHUB_TOKEN=***` env for GitHub API Limit
@@ -126,4 +122,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the Antbird project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/fukayatsu/antbird/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Antbird project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/fukayatsu/antbird/blob/master/CODE_OF_CONDUCT.md).

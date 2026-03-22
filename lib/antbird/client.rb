@@ -7,7 +7,6 @@ module Antbird
       scope: {},
       url: "http://localhost:9200",
       version: nil,
-      distribution: nil,
       read_timeout: 5,
       open_timeout: 2,
       adapter: ::Faraday.default_adapter,
@@ -21,14 +20,11 @@ module Antbird
 
       @scope        = scope.transform_keys(&:to_sym)
 
-      if version
-        @version      = version
-        @distribution = distribution
-      end
+      @version = version
 
       @api_specs = {}
     end
-    attr_reader :scope, :url, :distribution
+    attr_reader :scope, :url
     attr_reader :read_timeout, :open_timeout, :adapter
     attr_reader :api_specs, :last_request
 
@@ -37,14 +33,15 @@ module Antbird
         scope: new_scope,
         url: url,
         version: version,
-        distribution: distribution,
         read_timeout: read_timeout,
-        open_timeout: open_timeout
+        open_timeout: open_timeout,
+        adapter: adapter,
+        &@block
       )
     end
 
     def request(api_name, api_spec, params, path_params = [:index, :type, :id])
-      validate_params(api_spec, params)
+      validate_params(api_spec, params, path_params)
 
       body   = extract_body(params)
       scopes = extract_scopes(params, path_params)
@@ -195,32 +192,10 @@ module Antbird
       end
     end
 
-    def elasticsearch?
-      !opensearch?
-    end
-
-    def opensearch?
-      ensure_version_and_distribution
-
-      distribution == 'opensearch'
-    end
-
-    def elasticsearch_v7_0_compatible?
-      return true if opensearch?
-
-      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.0.0')
-    end
-
-    def elasticsearch_v7_6_compatible?
-      return true if opensearch?
-
-      elasticsearch? && Gem::Version.new(version) >= Gem::Version.new('7.6.0')
-    end
-
     def version
       return @version if @version
 
-      ensure_version_and_distribution
+      ensure_version
       @version
     end
 
@@ -246,16 +221,50 @@ module Antbird
       end
     end
 
-    def validate_params(api_spec, params)
-      # TODO case: required parameter is missing
-      # TODO case: invalid parameter name
-      # TODO case: invalid parameter format
+    SPECIAL_PARAMS = %i[body method read_timeout].freeze
+
+    def validate_params(api_spec, params, path_params)
       if api_spec.dig('body', 'required') && !params.key?(:body)
         raise ArgumentError, 'Body is missing'
       end
+
+      return unless api_spec.key?('params')
+
+      api_params = api_spec['params']
+      common = respond_to?(:common_params) ? common_params.fetch('params', {}).keys.map(&:to_sym) : []
+      valid_keys = api_params.keys.map(&:to_sym) + path_params + SPECIAL_PARAMS + common
+
+      unknown = params.keys - valid_keys
+      unless unknown.empty?
+        raise ArgumentError, "Unknown parameters: #{unknown.join(', ')}"
+      end
+
+      api_params.each do |name, defn|
+        if defn['required'] && !params.key?(name.to_sym)
+          raise ArgumentError, "Required parameter missing: #{name}"
+        end
+
+        value = params[name.to_sym]
+        next if value.nil?
+
+        validate_param_type(name, value, defn['type'])
+      end
     end
 
-    def ensure_version_and_distribution
+    def validate_param_type(name, value, type)
+      case type
+      when 'boolean'
+        unless value == true || value == false
+          raise ArgumentError, "Parameter '#{name}' must be a boolean"
+        end
+      when 'number', 'integer', 'int'
+        unless value.is_a?(Numeric)
+          raise ArgumentError, "Parameter '#{name}' must be a number"
+        end
+      end
+    end
+
+    def ensure_version
       return if @version
 
       response = connection.get('/')
@@ -265,25 +274,26 @@ module Antbird
 
       version_hash = response.body.dig('version')
       @version = version_hash['number']
-      @distribution = version_hash['distribution']
     end
 
     def class_version
       version.split('.')[0, 2].join('_')
     end
 
+    SUPPORTED_MAJOR_VERSION = 3
+
     def ensure_api_spec_loaded
       return if api_specs_loaded?
 
-      ensure_version_and_distribution
+      ensure_version
 
-      if opensearch?
-        require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
-        extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
-      else
-        require "antbird/rest_api/rest_api_v#{class_version}"
-        extend Antbird::RestApi.const_get "RestApiV#{class_version}"
+      major = version.split('.').first.to_i
+      unless major == SUPPORTED_MAJOR_VERSION
+        raise "Unsupported OpenSearch version: #{version}. Antbird currently supports OpenSearch #{SUPPORTED_MAJOR_VERSION}.x only."
       end
+
+      require "antbird/rest_api/rest_api_opensearch_v#{class_version}"
+      extend Antbird::RestApi.const_get "RestApiOpensearchV#{class_version}"
 
       @api_specs_loaded = true
     end

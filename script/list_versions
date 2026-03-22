@@ -5,11 +5,7 @@ require 'yaml'
 
 class VersionsGenerator
   def run
-    workflow_yaml = YAML.load_file('.github/workflows/build-os.yml')
-    min_version = workflow_yaml
-      .dig('jobs', 'build', 'strategy', 'matrix', 'search_versions')
-      .map { |v| Gem::Version.new(v) }
-      .min
+    min_version = Gem::Version.new('3.0.0')
 
     client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
 
