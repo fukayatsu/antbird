@@ -13,3 +13,5 @@
 Gemfile.lock
 
 .envrc
+
+.claude/settings.local.json

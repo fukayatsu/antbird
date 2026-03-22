@@ -10,13 +10,34 @@ module Antbird
 <% api_spec.each do |file_name, file_content| %>
 <%  next if file_name == '_common.json' %>
 <%  file_content.each do |api_name, api_spec| %>
+<%    path_params = api_spec['url']['paths'].flat_map { |path|
+        if path.is_a?(Hash) && path['parts']
+          path['parts'].keys.map(&:to_sym)
+        else
+          p = path.is_a?(Hash) ? path['path'] : path
+          p.scan(/\{([a-z_\-]+)\}/).flatten.map(&:to_sym)
+        end
+      }.uniq
+      minimal_paths = api_spec['url']['paths'].map { |path|
+        if path.is_a?(Hash)
+          h = { 'path' => path['path'], 'methods' => path['methods'] }
+          h['deprecated'] = true if path['deprecated']
+          h
+        else
+          path
+        end
+      }
+      minimal_spec = { 'url' => { 'paths' => minimal_paths } }
+      minimal_spec['methods'] = api_spec['methods'] if api_spec['methods']
+      minimal_spec['body'] = { 'required' => true } if api_spec.dig('body', 'required')
+%>
 
       # <%= api_name %> <%= api_spec['methods'] %>
       # <%= api_spec['documentation'] %>
       def <%= api_name.tr('.', '_') %>(params = {})
         api_name = '<%= api_name %>'
-        api_spec = @api_specs[api_name] ||= <%= api_spec %>
-        request(api_name, api_spec, params)
+        api_spec = @api_specs[api_name] ||= <%= minimal_spec.inspect %>
+        request(api_name, api_spec, params, <%= path_params.inspect %>)
       end
 <%    if api_spec['methods'] == ['HEAD'] || api_spec['url']['paths'].map{ |path| path.is_a?(Hash) ? path['methods'] : false }.all? { |methods| methods == ['HEAD'] } %>
       alias :<%= api_name.tr('.', '_') %>? :<%= api_name.tr('.', '_') %>
