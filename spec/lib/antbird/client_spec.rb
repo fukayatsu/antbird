@@ -67,7 +67,7 @@ RSpec.describe Antbird::Client do
 
   describe 'handle_errors' do
     let(:client) { described_class.new }
-    it 'raise ServerError' do
+    it 'raise RequestError for invalid body string' do
       error = trap_exception { client.search(body: 'aaa') }
 
       expect(error).to be_a(Antbird::Client::RequestError)
@@ -76,7 +76,7 @@ RSpec.describe Antbird::Client do
       expect(error.message).to include 'root_cause', 'json_parse_exception', 'reason'
     end
 
-    it 'raise ServerError' do
+    it 'raise RequestError for unknown query key' do
       error = trap_exception { client.search(body: { foo: {} }) }
 
       expect(error).to be_a(Antbird::Client::RequestError)
@@ -303,12 +303,12 @@ RSpec.describe Antbird::Client do
       before do
         response = double(Faraday::Response)
         allow(response).to receive(:status).and_return(200)
-        allow(response).to receive(:body).and_return({ 'version' => { 'number' => '1.1.0' }})
+        allow(response).to receive(:body).and_return({ 'version' => { 'number' => '3.0.0' }})
         expect(instance.connection).to receive(:get).with('/').and_return(response)
       end
 
       it do
-        expect(instance.version).to eq('1.1.0')
+        expect(instance.version).to eq('3.0.0')
       end
     end
 

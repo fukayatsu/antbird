@@ -34,7 +34,9 @@ module Antbird
         url: url,
         version: version,
         read_timeout: read_timeout,
-        open_timeout: open_timeout
+        open_timeout: open_timeout,
+        adapter: adapter,
+        &@block
       )
     end
 

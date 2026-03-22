@@ -27,7 +27,7 @@ jobs:
         env:
           discovery.type: single-node
           plugins.security.disabled: true
-          OPENSEARCH_INITIAL_ADMIN_PASSWORD: StrongPassowrd123
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: StrongPassword123
     steps:
       - name: Configure sysctl limits
         run: |

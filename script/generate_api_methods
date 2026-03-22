@@ -3,6 +3,7 @@
 require 'json'
 require 'yaml'
 require 'erb'
+require 'shellwords'
 
 class ApiMethodsGenerator
   def initialize(engine_name, rest_api_spec_repo, version)
@@ -34,7 +35,7 @@ class ApiMethodsGenerator
     return YAML.load_file(cache_file) if File.exist?(cache_file)
 
     `rm -rf tmp/repo`
-    `git clone --filter=blob:none --no-checkout -b #{ref} git@github.com:#{rest_api_spec_repo}.git tmp/repo`
+    `git clone --filter=blob:none --no-checkout -b #{Shellwords.shellescape(ref)} git@github.com:#{Shellwords.shellescape(rest_api_spec_repo)}.git tmp/repo`
     `cd tmp/repo && git sparse-checkout set rest-api-spec/src/main/resources/rest-api-spec/api && git checkout`
 
     api_spec = {}
