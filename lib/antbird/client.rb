@@ -41,7 +41,7 @@ module Antbird
     end
 
     def request(api_name, api_spec, params, path_params = [:index, :type, :id])
-      validate_params(api_spec, params)
+      validate_params(api_spec, params, path_params)
 
       body   = extract_body(params)
       scopes = extract_scopes(params, path_params)
@@ -221,12 +221,46 @@ module Antbird
       end
     end
 
-    def validate_params(api_spec, params)
-      # TODO case: required parameter is missing
-      # TODO case: invalid parameter name
-      # TODO case: invalid parameter format
+    SPECIAL_PARAMS = %i[body method read_timeout].freeze
+
+    def validate_params(api_spec, params, path_params)
       if api_spec.dig('body', 'required') && !params.key?(:body)
         raise ArgumentError, 'Body is missing'
+      end
+
+      return unless api_spec.key?('params')
+
+      api_params = api_spec['params']
+      common = respond_to?(:common_params) ? common_params.fetch('params', {}).keys.map(&:to_sym) : []
+      valid_keys = api_params.keys.map(&:to_sym) + path_params + SPECIAL_PARAMS + common
+
+      unknown = params.keys - valid_keys
+      unless unknown.empty?
+        raise ArgumentError, "Unknown parameters: #{unknown.join(', ')}"
+      end
+
+      api_params.each do |name, defn|
+        if defn['required'] && !params.key?(name.to_sym)
+          raise ArgumentError, "Required parameter missing: #{name}"
+        end
+
+        value = params[name.to_sym]
+        next if value.nil?
+
+        validate_param_type(name, value, defn['type'])
+      end
+    end
+
+    def validate_param_type(name, value, type)
+      case type
+      when 'boolean'
+        unless value == true || value == false
+          raise ArgumentError, "Parameter '#{name}' must be a boolean"
+        end
+      when 'number', 'integer', 'int'
+        unless value.is_a?(Numeric)
+          raise ArgumentError, "Parameter '#{name}' must be a number"
+        end
       end
     end
 

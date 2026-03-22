@@ -296,6 +296,80 @@ RSpec.describe Antbird::Client do
     end
   end
 
+  describe '#validate_params' do
+    let(:client) { described_class.new }
+    let(:api_spec) do
+      {
+        'url' => { 'paths' => [{ 'path' => '/_search', 'methods' => ['GET', 'POST'] }] },
+        'body' => { 'required' => true },
+        'params' => {
+          'timeout' => { 'type' => 'string' },
+          'size' => { 'type' => 'number' },
+          'explain' => { 'type' => 'boolean' },
+          'q' => { 'type' => 'string', 'required' => true }
+        }
+      }
+    end
+    let(:path_params) { [:index] }
+
+    it 'raises ArgumentError when body is required but missing' do
+      expect {
+        client.send(:validate_params, api_spec, { q: 'test' }, path_params)
+      }.to raise_error(ArgumentError, 'Body is missing')
+    end
+
+    it 'raises ArgumentError for unknown parameters' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', unknown_param: 'value' }, path_params)
+      }.to raise_error(ArgumentError, /Unknown parameters: unknown_param/)
+    end
+
+    it 'raises ArgumentError when required parameter is missing' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, timeout: '5s' }, path_params)
+      }.to raise_error(ArgumentError, /Required parameter missing: q/)
+    end
+
+    it 'raises ArgumentError for invalid boolean parameter' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', explain: 'yes' }, path_params)
+      }.to raise_error(ArgumentError, /Parameter 'explain' must be a boolean/)
+    end
+
+    it 'raises ArgumentError for invalid number parameter' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', size: 'abc' }, path_params)
+      }.to raise_error(ArgumentError, /Parameter 'size' must be a number/)
+    end
+
+    it 'accepts valid parameters' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', timeout: '5s', size: 10, explain: true }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts path params' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', index: 'my-index' }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts special params (method, read_timeout)' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, read_timeout: 10 }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'skips param name/type validation when api_spec has no params' do
+      spec_without_params = {
+        'url' => { 'paths' => [{ 'path' => '/_refresh', 'methods' => ['POST'] }] }
+      }
+      expect {
+        client.send(:validate_params, spec_without_params, { anything: 'goes' }, [])
+      }.not_to raise_error
+    end
+  end
+
   describe '#version' do
     subject(:instance) { described_class.new }
 

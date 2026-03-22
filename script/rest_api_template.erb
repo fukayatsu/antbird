@@ -30,6 +30,14 @@ module Antbird
       minimal_spec = { 'url' => { 'paths' => minimal_paths } }
       minimal_spec['methods'] = api_spec['methods'] if api_spec['methods']
       minimal_spec['body'] = { 'required' => true } if api_spec.dig('body', 'required')
+      if api_spec['params']
+        minimal_spec['params'] = {}
+        api_spec['params'].each do |pname, pdefn|
+          info = { 'type' => pdefn['type'] }
+          info['required'] = true if pdefn['required']
+          minimal_spec['params'][pname] = info
+        end
+      end
 %>
 
       # <%= api_name %> <%= api_spec['methods'] %>
