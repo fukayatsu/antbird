@@ -11,7 +11,7 @@ GEM
       public_suffix (>= 2.0.2, < 8.0)
     connection_pool (3.0.2)
     diff-lcs (1.6.2)
-    faraday (2.14.1)
+    faraday (2.14.2)
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
@@ -22,7 +22,7 @@ GEM
       net-http-persistent (>= 4.0.4, < 5)
     faraday-retry (2.4.0)
       faraday (~> 2.0)
-    json (2.19.2)
+    json (2.19.5)
     logger (1.7.0)
     net-http (0.9.1)
       uri (>= 0.11.1)
