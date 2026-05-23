@@ -144,44 +144,6 @@ module Antbird
       response.body
     end
 
-    # Builds the per-operation Faraday timeout options from the request params.
-    # - http_timeout: overrides read/open/write timeouts all at once. It is
-    #   mutually exclusive with read_timeout/open_timeout/write_timeout.
-    # - read_timeout: legacy per-operation override (sets Faraday's :timeout).
-    # - open_timeout / write_timeout: per-operation overrides for those phases.
-    # The granular options may be combined with each other.
-    # When none is given, the connection-level defaults are used.
-    #
-    # The read phase is set via Faraday's :timeout key (consistent with the
-    # legacy read_timeout path and the connection-level default); :open_timeout
-    # and :write_timeout are set explicitly so http_timeout overrides them even
-    # when the connection configures its own defaults.
-    def extract_timeout_options(params)
-      http_timeout  = params.delete(:http_timeout)
-      read_timeout  = params.delete(:read_timeout)
-      open_timeout  = params.delete(:open_timeout)
-      write_timeout = params.delete(:write_timeout)
-
-      if http_timeout && (read_timeout || open_timeout || write_timeout)
-        raise ArgumentError,
-          ":http_timeout cannot be combined with :read_timeout, :open_timeout or :write_timeout"
-      end
-
-      if http_timeout
-        return { timeout: http_timeout, open_timeout: http_timeout, write_timeout: http_timeout }
-      end
-
-      options = {}
-      options[:timeout]       = read_timeout  if read_timeout
-      options[:open_timeout]  = open_timeout  if open_timeout
-      options[:write_timeout] = write_timeout if write_timeout
-      options
-    end
-
-    def apply_timeouts(req, timeout_options)
-      timeout_options.each { |key, value| req.options[key] = value }
-    end
-
     def extract_method(params)
       params.delete(:method)&.to_sym
     end
@@ -242,6 +204,44 @@ module Antbird
     end
 
     private
+
+    # Builds the per-operation Faraday timeout options from the request params.
+    # - http_timeout: overrides read/open/write timeouts all at once. It is
+    #   mutually exclusive with read_timeout/open_timeout/write_timeout.
+    # - read_timeout: legacy per-operation override (sets Faraday's :timeout).
+    # - open_timeout / write_timeout: per-operation overrides for those phases.
+    # The granular options may be combined with each other.
+    # When none is given, the connection-level defaults are used.
+    #
+    # The read phase is set via Faraday's :timeout key (consistent with the
+    # legacy read_timeout path and the connection-level default); :open_timeout
+    # and :write_timeout are set explicitly so http_timeout overrides them even
+    # when the connection configures its own defaults.
+    def extract_timeout_options(params)
+      http_timeout  = params.delete(:http_timeout)
+      read_timeout  = params.delete(:read_timeout)
+      open_timeout  = params.delete(:open_timeout)
+      write_timeout = params.delete(:write_timeout)
+
+      if http_timeout && (read_timeout || open_timeout || write_timeout)
+        raise ArgumentError,
+          ":http_timeout cannot be combined with :read_timeout, :open_timeout or :write_timeout"
+      end
+
+      if http_timeout
+        return { timeout: http_timeout, open_timeout: http_timeout, write_timeout: http_timeout }
+      end
+
+      options = {}
+      options[:timeout]       = read_timeout  if read_timeout
+      options[:open_timeout]  = open_timeout  if open_timeout
+      options[:write_timeout] = write_timeout if write_timeout
+      options
+    end
+
+    def apply_timeouts(req, timeout_options)
+      timeout_options.each { |key, value| req.options[key] = value }
+    end
 
     # NOTE: stable sort
     def sort_url_paths(url_paths)

@@ -384,9 +384,15 @@ RSpec.describe Antbird::Client do
       }.not_to raise_error
     end
 
-    it 'accepts special params (method, http_timeout, read_timeout, open_timeout, write_timeout)' do
+    it 'accepts special params (method, read_timeout, open_timeout, write_timeout)' do
       expect {
-        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, http_timeout: 30, read_timeout: 10, open_timeout: 3, write_timeout: 7 }, path_params)
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, read_timeout: 10, open_timeout: 3, write_timeout: 7 }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts http_timeout as a special param' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', http_timeout: 30 }, path_params)
       }.not_to raise_error
     end
 
