@@ -151,6 +151,11 @@ module Antbird
     # - open_timeout / write_timeout: per-operation overrides for those phases.
     # The granular options may be combined with each other.
     # When none is given, the connection-level defaults are used.
+    #
+    # The read phase is set via Faraday's :timeout key (consistent with the
+    # legacy read_timeout path and the connection-level default); :open_timeout
+    # and :write_timeout are set explicitly so http_timeout overrides them even
+    # when the connection configures its own defaults.
     def extract_timeout_options(params)
       http_timeout  = params.delete(:http_timeout)
       read_timeout  = params.delete(:read_timeout)
@@ -163,7 +168,7 @@ module Antbird
       end
 
       if http_timeout
-        return { open_timeout: http_timeout, read_timeout: http_timeout, write_timeout: http_timeout }
+        return { timeout: http_timeout, open_timeout: http_timeout, write_timeout: http_timeout }
       end
 
       options = {}
