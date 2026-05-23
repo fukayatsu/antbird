@@ -131,7 +131,7 @@ Timeouts can be overridden per operation. There are two ways to do it:
    phases. These may be combined with each other:
 
    ```ruby
-   client.bulk(body: [...], open_timeout: 3, write_timeout: 30)
+   client.bulk(body: [{ index: { _id: '1' } }, { field1: 'a' }], open_timeout: 3, write_timeout: 30)
    ```
 
 When none of these is given, the client falls back to the values configured at
@@ -142,7 +142,7 @@ initialization time.
 `ArgumentError`:
 
 ```ruby
-client.search(body: {...}, http_timeout: 60, open_timeout: 3) # => ArgumentError
+client.search(body: { query: { match_all: {} } }, http_timeout: 60, open_timeout: 3) # => ArgumentError
 ```
 
 All of the above are client-side (HTTP) timeouts and do not collide with the
@@ -151,7 +151,7 @@ can be passed together:
 
 ```ruby
 client.bulk(
-  body: [...],
+  body: [{ index: { _id: '1' } }, { field1: 'a' }],
   timeout: '30s',    # OpenSearch server-side timeout (query parameter)
   http_timeout: 60,  # HTTP read/open/write timeout (Faraday)
 )
