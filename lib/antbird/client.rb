@@ -9,14 +9,16 @@ module Antbird
       version: nil,
       read_timeout: 5,
       open_timeout: 2,
+      write_timeout: nil,
       adapter: ::Faraday.default_adapter,
       &block)
 
-      @read_timeout = read_timeout
-      @open_timeout = open_timeout
-      @adapter      = adapter
-      @block        = block
-      @url          = url
+      @read_timeout  = read_timeout
+      @open_timeout  = open_timeout
+      @write_timeout = write_timeout
+      @adapter       = adapter
+      @block         = block
+      @url           = url
 
       @scope        = scope.transform_keys(&:to_sym)
 
@@ -25,7 +27,7 @@ module Antbird
       @api_specs = {}
     end
     attr_reader :scope, :url
-    attr_reader :read_timeout, :open_timeout, :adapter
+    attr_reader :read_timeout, :open_timeout, :write_timeout, :adapter
     attr_reader :api_specs, :last_request
 
     def scoped(new_scope = {})
@@ -35,6 +37,7 @@ module Antbird
         version: version,
         read_timeout: read_timeout,
         open_timeout: open_timeout,
+        write_timeout: write_timeout,
         adapter: adapter,
         &@block
       )
@@ -84,7 +87,7 @@ module Antbird
           methods.first
         end
 
-      read_timeout = params.delete(:read_timeout)
+      timeout_options = extract_timeout_options(params)
       params.reject! { |_, v| v.nil? }
 
       @last_request = {
@@ -100,29 +103,29 @@ module Antbird
         when :head
           connection.head(api_path) do |req|
             req.params = params unless params.empty?
-            req.options[:timeout] = read_timeout if read_timeout
+            apply_timeouts(req, timeout_options)
           end
         when :get
           connection.get(api_path) do |req|
             req.params = params unless params.empty?
             req.body = body if body
-            req.options[:timeout] = read_timeout if read_timeout
+            apply_timeouts(req, timeout_options)
           end
         when :put
           connection.put(api_path, body) do |req|
             req.params = params unless params.empty?
-            req.options[:timeout] = read_timeout if read_timeout
+            apply_timeouts(req, timeout_options)
           end
         when :post
           connection.post(api_path, body) do |req|
             req.params = params unless params.empty?
-            req.options[:timeout] = read_timeout if read_timeout
+            apply_timeouts(req, timeout_options)
           end
         when :delete
           connection.delete(api_path) do |req|
             req.params = params unless params.empty?
             req.body = body if body
-            req.options[:timeout] = read_timeout if read_timeout
+            apply_timeouts(req, timeout_options)
           end
         else
           raise ArgumentError, "Unknown HTTP request method: #{method.inspect}"
@@ -139,6 +142,39 @@ module Antbird
 
       handle_errors!(response)
       response.body
+    end
+
+    # Builds the per-operation Faraday timeout options from the request params.
+    # - http_timeout: overrides read/open/write timeouts all at once. It is
+    #   mutually exclusive with read_timeout/open_timeout/write_timeout.
+    # - read_timeout: legacy per-operation override (sets Faraday's :timeout).
+    # - open_timeout / write_timeout: per-operation overrides for those phases.
+    # The granular options may be combined with each other.
+    # When none is given, the connection-level defaults are used.
+    def extract_timeout_options(params)
+      http_timeout  = params.delete(:http_timeout)
+      read_timeout  = params.delete(:read_timeout)
+      open_timeout  = params.delete(:open_timeout)
+      write_timeout = params.delete(:write_timeout)
+
+      if http_timeout && (read_timeout || open_timeout || write_timeout)
+        raise ArgumentError,
+          ":http_timeout cannot be combined with :read_timeout, :open_timeout or :write_timeout"
+      end
+
+      if http_timeout
+        return { open_timeout: http_timeout, read_timeout: http_timeout, write_timeout: http_timeout }
+      end
+
+      options = {}
+      options[:timeout]       = read_timeout  if read_timeout
+      options[:open_timeout]  = open_timeout  if open_timeout
+      options[:write_timeout] = write_timeout if write_timeout
+      options
+    end
+
+    def apply_timeouts(req, timeout_options)
+      timeout_options.each { |key, value| req.options[key] = value }
     end
 
     def extract_method(params)
@@ -185,8 +221,9 @@ module Antbird
         conn.request :json
         conn.response :json, content_type: /\bjson$/
 
-        conn.options[:timeout]      = read_timeout
-        conn.options[:open_timeout] = open_timeout
+        conn.options[:timeout]       = read_timeout
+        conn.options[:open_timeout]  = open_timeout
+        conn.options[:write_timeout] = write_timeout if write_timeout
 
         conn.adapter adapter
       end
@@ -221,7 +258,7 @@ module Antbird
       end
     end
 
-    SPECIAL_PARAMS = %i[body method read_timeout].freeze
+    SPECIAL_PARAMS = %i[body method http_timeout read_timeout open_timeout write_timeout].freeze
 
     def validate_params(api_spec, params, path_params)
       if api_spec.dig('body', 'required') && !params.key?(:body)

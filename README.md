@@ -99,6 +99,67 @@ client.bulk(body: [
 ])
 ```
 
+### Timeouts
+
+Default connection timeouts are configured when the client is created:
+
+```ruby
+client = Antbird::Client.new(
+  read_timeout: 5,   # seconds (default)
+  open_timeout: 2,   # seconds (default)
+  write_timeout: 30, # seconds (default: nil => falls back to read_timeout)
+)
+```
+
+`write_timeout` is optional. When omitted it is left unset and the adapter
+falls back to `read_timeout` for the write phase, preserving existing behavior.
+
+Timeouts can be overridden per operation. There are two ways to do it:
+
+1. `http_timeout` — a shorthand that sets the `read`, `open` and `write`
+   timeouts all at once for that single request:
+
+   ```ruby
+   # This request alone uses a 60s timeout for read/open/write.
+   client.search(body: { query: { match_all: {} } }, http_timeout: 60)
+
+   # Long-running reindex; give it more time without affecting other calls.
+   client.reindex(body: { source: { index: 'a' }, dest: { index: 'b' } }, http_timeout: 600)
+   ```
+
+2. `read_timeout` / `open_timeout` / `write_timeout` — override individual
+   phases. These may be combined with each other:
+
+   ```ruby
+   client.bulk(body: [...], open_timeout: 3, write_timeout: 30)
+   ```
+
+When none of these is given, the client falls back to the values configured at
+initialization time.
+
+`http_timeout` is mutually exclusive with `read_timeout` / `open_timeout` /
+`write_timeout`. Passing `http_timeout` together with any of them raises an
+`ArgumentError`:
+
+```ruby
+client.search(body: {...}, http_timeout: 60, open_timeout: 3) # => ArgumentError
+```
+
+All of the above are client-side (HTTP) timeouts and do not collide with the
+server-side `timeout` query parameter that some OpenSearch APIs accept — both
+can be passed together:
+
+```ruby
+client.bulk(
+  body: [...],
+  timeout: '30s',    # OpenSearch server-side timeout (query parameter)
+  http_timeout: 60,  # HTTP read/open/write timeout (Faraday)
+)
+```
+
+> `read_timeout` sets Faraday's global `:timeout` (preserving its original
+> behavior), while `open_timeout` / `write_timeout` set those specific phases.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
