@@ -63,6 +63,36 @@ RSpec.describe Antbird::Client do
         expect { subject }.not_to raise_error
       end
     end
+
+    context 'timeouts' do
+      it 'applies the default read/open timeouts to the connection' do
+        options = described_class.new.connection.options
+
+        expect(options[:timeout]).to eq(5)
+        expect(options[:open_timeout]).to eq(2)
+      end
+
+      it 'does not set write_timeout by default (falls back to :timeout)' do
+        options = described_class.new.connection.options
+
+        expect(options[:write_timeout]).to be_nil
+      end
+
+      it 'allows configuring write_timeout at initialization' do
+        options = described_class.new(write_timeout: 30).connection.options
+
+        expect(options[:write_timeout]).to eq(30)
+      end
+
+      it 'carries timeouts over to scoped clients' do
+        client = described_class.new(read_timeout: 7, open_timeout: 3, write_timeout: 30)
+        scoped = client.scoped(index: 'foo')
+
+        expect(scoped.read_timeout).to eq(7)
+        expect(scoped.open_timeout).to eq(3)
+        expect(scoped.write_timeout).to eq(30)
+      end
+    end
   end
 
   describe 'handle_errors' do
@@ -354,9 +384,15 @@ RSpec.describe Antbird::Client do
       }.not_to raise_error
     end
 
-    it 'accepts special params (method, read_timeout)' do
+    it 'accepts special params (method, read_timeout, open_timeout, write_timeout)' do
       expect {
-        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, read_timeout: 10 }, path_params)
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', method: :get, read_timeout: 10, open_timeout: 3, write_timeout: 7 }, path_params)
+      }.not_to raise_error
+    end
+
+    it 'accepts http_timeout as a special param' do
+      expect {
+        client.send(:validate_params, api_spec, { body: {}, q: 'test', http_timeout: 30 }, path_params)
       }.not_to raise_error
     end
 
@@ -367,6 +403,80 @@ RSpec.describe Antbird::Client do
       expect {
         client.send(:validate_params, spec_without_params, { anything: 'goes' }, [])
       }.not_to raise_error
+    end
+  end
+
+  describe '#extract_timeout_options' do
+    let(:client) { described_class.new }
+
+    def extract(params)
+      client.send(:extract_timeout_options, params)
+    end
+
+    context 'when http_timeout is given' do
+      it 'sets read (:timeout), open and write timeouts to that value' do
+        expect(extract(http_timeout: 30)).to eq(
+          timeout: 30, open_timeout: 30, write_timeout: 30
+        )
+      end
+    end
+
+    context 'when only read_timeout is given' do
+      it 'sets Faraday :timeout only (legacy behavior)' do
+        expect(extract(read_timeout: 10)).to eq(timeout: 10)
+      end
+    end
+
+    context 'when open_timeout and write_timeout are given' do
+      it 'sets only those phases' do
+        expect(extract(open_timeout: 3, write_timeout: 7)).to eq(
+          open_timeout: 3, write_timeout: 7
+        )
+      end
+    end
+
+    context 'when the granular options are combined' do
+      it 'sets each one independently' do
+        expect(extract(read_timeout: 10, open_timeout: 3, write_timeout: 7)).to eq(
+          timeout: 10, open_timeout: 3, write_timeout: 7
+        )
+      end
+    end
+
+    context 'when none is given' do
+      it 'returns an empty hash (connection-level defaults are used)' do
+        expect(extract({})).to eq({})
+      end
+    end
+
+    it 'removes the timeout keys from params' do
+      params = { q: 'test', http_timeout: 30 }
+      extract(params)
+      expect(params).to eq(q: 'test')
+    end
+
+    [:read_timeout, :open_timeout, :write_timeout].each do |granular|
+      it "raises ArgumentError when http_timeout is combined with #{granular}" do
+        expect {
+          extract(http_timeout: 30, granular => 10)
+        }.to raise_error(ArgumentError, /:http_timeout cannot be combined with/)
+      end
+    end
+  end
+
+  describe '#request timeout validation' do
+    let(:client) { described_class.new }
+    let(:api_spec) do
+      {
+        'url' => { 'paths' => [{ 'path' => '/_search', 'methods' => ['GET', 'POST'] }] },
+        'body' => { 'required' => true }
+      }
+    end
+
+    it 'raises ArgumentError when http_timeout is combined with a granular timeout' do
+      expect {
+        client.request('search', api_spec, { body: {}, http_timeout: 60, read_timeout: 10 })
+      }.to raise_error(ArgumentError, /:http_timeout cannot be combined with/)
     end
   end
 
