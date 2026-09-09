@@ -1,5 +1,6 @@
 require 'faraday'
 require 'antbird/client/errors'
+require 'antbird/client/json_decoder'
 
 module Antbird
   class Client
@@ -186,7 +187,7 @@ module Antbird
         @block&.call(conn)
 
         conn.request :json
-        conn.response :json, content_type: /\bjson$/
+        conn.response :json, content_type: /\bjson$/, parser_options: { decoder: [JsonDecoder, :parse] }
 
         conn.options[:timeout]       = read_timeout
         conn.options[:open_timeout]  = open_timeout
